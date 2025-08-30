@@ -70,9 +70,9 @@ jobs:
 
     - name: Build plugin
       run: |
-        wp dist-archive ./plugin-name ./plugin-name.zip
+        composer run-script build
         mkdir tmp-build
-        unzip plugin-name.zip -d tmp-build
+        unzip dist/plugin-name.zip -d tmp-build
 
     - name: WordPress Plugin Check
       uses: wordpress/plugin-check-action@v1

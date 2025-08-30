@@ -1,7 +1,7 @@
 === My Awesome WP Boilerplate ===
 Contributors: alanef
 Donate link: https://github.com/sponsors/alanef
-Tags: boilerplate, development, framework, wordpress, standards
+Tags: boilerplate, development, framework, standards, starter
 Requires at least: 5.8
 Tested up to: 6.8
 Stable tag: 1.0.0

@@ -10,7 +10,7 @@
  * Author URI:        https://github.com/alanef
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       my-awesome-wp-boilerplate
+ * Text Domain:       plugin-name
  * Domain Path:       /languages
  *
  * @package MyAwesomeWPBoilerplate
