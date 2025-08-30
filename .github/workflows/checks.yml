@@ -38,7 +38,7 @@ jobs:
 
     - name: Run Security Checks
       run: |
-        if composer show -i | grep -q "phpcs-variable-analysis"; then
+        if composer show --installed | grep -q "phpcs-variable-analysis"; then
           composer run-script phpcs-security
         else
           echo "Security checks not configured, skipping..."
@@ -46,7 +46,7 @@ jobs:
 
     - name: Check PHP Compatibility
       run: |
-        if composer show -i | grep -q "phpcompatibility"; then
+        if composer show --installed | grep -q "phpcompatibility"; then
           composer run-script phpcompat
         else
           ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4- --extensions=php plugin-name/
