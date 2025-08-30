@@ -65,8 +65,9 @@ add_action( 'init', 'plugin_name_init' );
  */
 function plugin_name_admin_enqueue_scripts( $hook ) {
 	// Only load on specific admin pages if needed.
+	// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 	// wp_enqueue_script( 'plugin-name-admin', PLUGIN_NAME_URL . 'assets/js/admin.js', array( 'jquery' ), PLUGIN_NAME_VERSION, true );
-	// wp_enqueue_style( 'plugin-name-admin', PLUGIN_NAME_URL . 'assets/css/admin.css', array(), PLUGIN_NAME_VERSION );
+	// wp_enqueue_style( 'plugin-name-admin', PLUGIN_NAME_URL . 'assets/css/admin.css', array(), PLUGIN_NAME_VERSION ).
 }
 add_action( 'admin_enqueue_scripts', 'plugin_name_admin_enqueue_scripts' );
 
@@ -74,7 +75,8 @@ add_action( 'admin_enqueue_scripts', 'plugin_name_admin_enqueue_scripts' );
  * Enqueue frontend scripts and styles.
  */
 function plugin_name_enqueue_scripts() {
+	// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 	// wp_enqueue_script( 'plugin-name', PLUGIN_NAME_URL . 'assets/js/frontend.js', array( 'jquery' ), PLUGIN_NAME_VERSION, true );
-	// wp_enqueue_style( 'plugin-name', PLUGIN_NAME_URL . 'assets/css/frontend.css', array(), PLUGIN_NAME_VERSION );
+	// wp_enqueue_style( 'plugin-name', PLUGIN_NAME_URL . 'assets/css/frontend.css', array(), PLUGIN_NAME_VERSION ).
 }
 add_action( 'wp_enqueue_scripts', 'plugin_name_enqueue_scripts' );

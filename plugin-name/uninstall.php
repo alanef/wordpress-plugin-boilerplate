@@ -34,34 +34,42 @@ wp_cache_flush();
  */
 
 // Single site.
+// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 // delete_option( 'plugin_name_option' );
-// delete_option( 'plugin_name_settings' );
+// delete_option( 'plugin_name_settings' ).
 
 // For site options in Multisite.
-// delete_site_option( 'plugin_name_option' );
+// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
+// delete_site_option( 'plugin_name_option' ).
 
 /**
  * Delete plugin transients.
  */
-// delete_transient( 'plugin_name_transient' );
+// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
+// delete_transient( 'plugin_name_transient' ).
 
 /**
  * Delete plugin user meta.
  */
+// phpcs:disable Squiz.PHP.CommentedOutCode.Found
 // $users = get_users();
 // foreach ( $users as $user ) {
-// 	delete_user_meta( $user->ID, 'plugin_name_user_meta' );
+// delete_user_meta( $user->ID, 'plugin_name_user_meta' ).
 // }
+// phpcs:enable Squiz.PHP.CommentedOutCode.Found
 
 /**
  * Delete plugin post meta.
  */
-// delete_post_meta_by_key( 'plugin_name_post_meta' );
+// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
+// delete_post_meta_by_key( 'plugin_name_post_meta' ).
 
 /**
  * Drop custom database tables.
  *
  * Uncomment and modify as needed if your plugin creates custom tables.
  */
+// phpcs:disable Squiz.PHP.CommentedOutCode.Found
 // global $wpdb;
-// $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}plugin_name_table" );
+// $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}plugin_name_table" ).
+// phpcs:enable Squiz.PHP.CommentedOutCode.Found
