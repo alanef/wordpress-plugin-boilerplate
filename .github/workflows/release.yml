@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'    # Matches v1.7.3
+      - '*.*.*'      # Matches 1.7.3
+      - 'v*.*'       # Matches v2.3
+      - '*.*'        # Matches 2.3
+
+permissions:
+  contents: write
+
+jobs:
+  quality-checks:
+    uses: ./.github/workflows/checks.yml
+
+  release:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Extract PHP version
+      id: php_version
+      run: |
+        PHP_VERSION=$(grep -oP 'Requires PHP:\s*\K[\d.]+' plugin-name/plugin-name.php || echo "7.4")
+        echo "version=$PHP_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ steps.php_version.outputs.version }}
+        tools: composer:v2, wp-cli
+        coverage: none
+
+    - name: Verify tag matches plugin version
+      run: |
+        TAG_VERSION=${GITHUB_REF#refs/tags/}
+        TAG_VERSION=${TAG_VERSION#v}
+        PLUGIN_VERSION=$(grep -oP 'Version:\s*\K[\d.]+' plugin-name/plugin-name.php)
+        
+        echo "Tag version: $TAG_VERSION"
+        echo "Plugin version: $PLUGIN_VERSION"
+        
+        if [ "$TAG_VERSION" != "$PLUGIN_VERSION" ]; then
+          echo "Tag version does not match plugin version!"
+          exit 1
+        fi
+
+    - name: Install dependencies
+      run: |
+        composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+    - name: Install WP-CLI dist-archive command
+      run: wp package install wp-cli/dist-archive-command
+
+    - name: Build plugin
+      run: |
+        # Use WP-CLI to build the plugin archive
+        wp dist-archive ./plugin-name ./plugin-name.zip
+        
+        # Create dist directory for consistency with build script
+        mkdir -p dist
+        mv plugin-name.zip dist/
+        
+        # Also rename with version for better release management
+        PLUGIN_VERSION=$(grep -oP 'Version:\s*\K[\d.]+' plugin-name/plugin-name.php)
+        cp dist/plugin-name.zip "dist/plugin-name-${PLUGIN_VERSION}.zip"
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/*.zip
+        body: |
+          Release of Plugin Name v${{ github.ref_name }}
+          
+          ## Installation
+          1. Download `plugin-name.zip` from the assets below
+          2. In WordPress admin, go to Plugins > Add New > Upload Plugin
+          3. Choose the downloaded zip file and click Install Now
+          4. Activate the plugin
+          5. Configure the plugin in Settings > Plugin Name
+          
+          ## Changelog
+          See [readme.txt](plugin-name/readme.txt) for detailed changelog.
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

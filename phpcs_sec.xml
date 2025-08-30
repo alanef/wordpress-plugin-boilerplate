@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Plugin Security"
+         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/squizlabs/PHP_CodeSniffer/master/phpcs.xsd">
+
+    <description>WordPress Security Rules for Plugin</description>
+
+    <!-- What to scan -->
+    <file>./plugin-name</file>
+    
+    <!-- Only scan PHP files -->
+    <arg name="extensions" value="php"/>
+    
+    <!-- Exclude vendor directories -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    
+    <!-- Exclude JavaScript files -->
+    <exclude-pattern>*.js</exclude-pattern>
+    <exclude-pattern>*.min.js</exclude-pattern>
+
+    <!-- Security-focused rules only -->
+    <rule ref="WordPress.Security.EscapeOutput">
+    </rule>
+    <rule ref="WordPress.Security.SafeRedirect">
+    </rule>
+    <rule ref="WordPress.Security.NonceVerification">
+    </rule>
+    <rule ref="WordPress.Security.PluginMenuSlug">
+    </rule>
+    <rule ref="Squiz.PHP.Eval">
+    </rule>
+    <rule ref="WordPress.PHP.RestrictedPHPFunctions">
+    </rule>
+    <rule ref="WordPress.Security.ValidatedSanitizedInput">
+    </rule>
+</ruleset>

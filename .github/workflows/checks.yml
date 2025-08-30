@@ -1,0 +1,80 @@
+name: Quality Checks
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_call:
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Extract PHP version
+      id: php_version
+      run: |
+        PHP_VERSION=$(grep -oP 'Requires PHP:\s*\K[\d.]+' plugin-name/plugin-name.php || echo "7.4")
+        echo "version=$PHP_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ steps.php_version.outputs.version }}
+        tools: composer:v2, wp-cli
+        coverage: none
+
+    - name: Validate composer.json
+      run: composer validate --no-check-all --no-check-publish
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress
+
+    - name: Run PHPCS WordPress Coding Standards
+      run: composer run-script lint
+
+    - name: Run Security Checks
+      run: |
+        if composer show -i | grep -q "phpcs-variable-analysis"; then
+          composer run-script phpcs-security
+        else
+          echo "Security checks not configured, skipping..."
+        fi
+
+    - name: Check PHP Compatibility
+      run: |
+        if composer show -i | grep -q "phpcompatibility"; then
+          composer run-script phpcompat
+        else
+          ./vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4- --extensions=php plugin-name/
+        fi
+
+    - name: Check version consistency
+      run: |
+        PLUGIN_VERSION=$(sed -n 's/ \* Version:\s*\(.*\)/\1/p' plugin-name/plugin-name.php)
+        CONSTANT_VERSION=$(sed -n "s/define( 'PLUGIN_NAME_VERSION', '\(.*\)' );/\1/p" plugin-name/plugin-name.php)
+        
+        echo "Plugin header version: $PLUGIN_VERSION"
+        echo "Version constant: $CONSTANT_VERSION"
+        
+        if [ "$PLUGIN_VERSION" != "$CONSTANT_VERSION" ]; then
+          echo "Version mismatch detected!"
+          exit 1
+        fi
+
+    - name: Install WP-CLI dist-archive command
+      run: wp package install wp-cli/dist-archive-command
+
+    - name: Build plugin
+      run: |
+        wp dist-archive ./plugin-name ./plugin-name.zip
+        mkdir tmp-build
+        unzip plugin-name.zip -d tmp-build
+
+    - name: WordPress Plugin Check
+      uses: wordpress/plugin-check-action@v1
+      with:
+        build-dir: 'tmp-build/plugin-name'

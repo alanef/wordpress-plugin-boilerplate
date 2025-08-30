@@ -34,17 +34,23 @@
         "preferred-install": "dist"
     },
     "scripts": {
-        "lint": "phpcs",
-        "lint:fix": "phpcbf",
-        "test": "phpunit",
-        "test:unit": "phpunit --testsuite unit",
-        "test:integration": "phpunit --testsuite integration"
+        "lint": "./vendor/bin/phpcs",
+        "lint:fix": "./vendor/bin/phpcbf",
+        "phpcs-security": "./vendor/bin/phpcs -p --standard=phpcs_sec.xml",
+        "phpcompat": "./vendor/bin/phpcs -p --standard=PHPCompatibilityWP --ignore=*/vendor/* --extensions=php --runtime-set testVersion 7.4- plugin-name",
+        "test": "./vendor/bin/phpunit",
+        "test:unit": "./vendor/bin/phpunit --testsuite unit",
+        "test:integration": "./vendor/bin/phpunit --testsuite integration",
+        "make-pot": "mkdir -p plugin-name/languages && wp i18n make-pot ./plugin-name ./plugin-name/languages/plugin-name.pot --skip-audit --exclude='vendor,node_modules,tests,bin'",
+        "build": "composer run-script make-pot && rm -rf dist && mkdir -p dist && wp dist-archive ./plugin-name ./dist/plugin-name.zip --plugin-dirname=plugin-name"
     },
     "scripts-descriptions": {
         "lint": "Run PHP_CodeSniffer to detect coding standard violations",
         "lint:fix": "Run PHP Code Beautifier to fix coding standard violations",
         "test": "Run all PHPUnit tests",
         "test:unit": "Run PHPUnit unit tests only",
-        "test:integration": "Run PHPUnit integration tests only"
+        "test:integration": "Run PHPUnit integration tests only",
+        "make-pot": "Generate POT file for translations",
+        "build": "Build the plugin with language files and create distribution archive"
     }
 }

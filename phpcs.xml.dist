@@ -61,7 +61,7 @@
     <config name="minimum_wp_version" value="5.8"/>
 
     <!-- Allow some flexibility for modern PHP -->
-    <rule ref="WordPress.PHP.DisallowShortTernary">
-        <exclude name="WordPress.PHP.DisallowShortTernary.Found"/>
+    <rule ref="Universal.Operators.DisallowShortTernary">
+        <exclude name="Universal.Operators.DisallowShortTernary.Found"/>
     </rule>
 </ruleset>

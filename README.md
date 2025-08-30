@@ -59,7 +59,8 @@ npm run env:start
 wordpress-plugin-boilerplate/
 ├── .github/                      # GitHub Actions workflows
 │   ├── workflows/
-│   │   ├── build-release.yml     # Automated release builds
+│   │   ├── checks.yml            # Quality checks (PHPCS, compatibility, security)
+│   │   ├── release.yml           # Automated release builds with quality checks
 │   │   └── *.yml.example          # Optional deployment workflows
 │   └── ISSUE_TEMPLATE/            # Issue templates
 ├── plugin-name/                   # Main plugin directory
@@ -127,7 +128,7 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The `build-release.yml` workflow will automatically create a release with the plugin ZIP file.
+The `release.yml` workflow will run quality checks and automatically create a release with the plugin ZIP file.
 
 ### 2. WordPress.org SVN Repository
 
