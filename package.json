@@ -1,0 +1,44 @@
+{
+    "name": "plugin-name",
+    "version": "1.0.0",
+    "description": "WordPress plugin boilerplate",
+    "author": "Your Name",
+    "license": "GPL-2.0-or-later",
+    "keywords": [
+        "wordpress",
+        "plugin",
+        "boilerplate"
+    ],
+    "homepage": "https://github.com/yourname/plugin-name",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/yourname/plugin-name.git"
+    },
+    "bugs": {
+        "url": "https://github.com/yourname/plugin-name/issues"
+    },
+    "scripts": {
+        "env:start": "wp-env start --xdebug",
+        "env:stop": "wp-env stop",
+        "env:restart": "wp-env stop && wp-env start",
+        "env:reset": "wp-env destroy && wp-env start",
+        "env:cli": "wp-env run cli",
+        "env:logs": "wp-env logs",
+        "lint:php": "composer run-script lint",
+        "lint:php:fix": "composer run-script lint:fix",
+        "test": "wp-env run tests-cli 'cd /var/www/html/wp-content/plugins/plugin-name && phpunit'",
+        "test:unit": "wp-env run tests-cli 'cd /var/www/html/wp-content/plugins/plugin-name && phpunit --testsuite unit'",
+        "test:integration": "wp-env run tests-cli 'cd /var/www/html/wp-content/plugins/plugin-name && phpunit --testsuite integration'",
+        "build": "./bin/build-release.sh",
+        "setup": "./bin/setup-plugin.sh",
+        "composer:install": "composer install",
+        "composer:update": "composer update"
+    },
+    "devDependencies": {
+        "@wordpress/env": "^9.0.0"
+    },
+    "engines": {
+        "node": ">=18.0.0",
+        "npm": ">=8.0.0"
+    }
+}

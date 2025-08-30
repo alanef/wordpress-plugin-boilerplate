@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<phpunit
+    bootstrap="bootstrap.php"
+    backupGlobals="false"
+    colors="true"
+    convertErrorsToExceptions="true"
+    convertNoticesToExceptions="true"
+    convertWarningsToExceptions="true"
+    verbose="true"
+>
+    <testsuites>
+        <testsuite name="unit">
+            <directory suffix="Test.php">./unit</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory suffix="Test.php">./integration</directory>
+        </testsuite>
+    </testsuites>
+    
+    <coverage>
+        <include>
+            <directory suffix=".php">../plugin-name</directory>
+        </include>
+        <exclude>
+            <directory>../plugin-name/vendor</directory>
+            <directory>../plugin-name/tests</directory>
+            <directory>../plugin-name/node_modules</directory>
+        </exclude>
+    </coverage>
+    
+    <php>
+        <const name="WP_TESTS_PHPUNIT_POLYFILLS_PATH" value="vendor/yoast/phpunit-polyfills"/>
+    </php>
+</phpunit>

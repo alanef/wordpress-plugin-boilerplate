@@ -1,0 +1,50 @@
+{
+    "name": "yourname/plugin-name",
+    "description": "WordPress plugin boilerplate",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Your Name",
+            "email": "email@example.com",
+            "homepage": "https://example.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.7",
+        "wp-coding-standards/wpcs": "^3.0",
+        "phpcompatibility/phpcompatibility-wp": "^2.1",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "phpunit/phpunit": "^9.5",
+        "yoast/phpunit-polyfills": "^2.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "platform": {
+            "php": "7.4"
+        },
+        "optimize-autoloader": true,
+        "preferred-install": "dist"
+    },
+    "scripts": {
+        "lint": "phpcs",
+        "lint:fix": "phpcbf",
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite unit",
+        "test:integration": "phpunit --testsuite integration"
+    },
+    "scripts-descriptions": {
+        "lint": "Run PHP_CodeSniffer to detect coding standard violations",
+        "lint:fix": "Run PHP Code Beautifier to fix coding standard violations",
+        "test": "Run all PHPUnit tests",
+        "test:unit": "Run PHPUnit unit tests only",
+        "test:integration": "Run PHPUnit integration tests only"
+    }
+}

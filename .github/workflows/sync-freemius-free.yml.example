@@ -1,0 +1,43 @@
+name: Sync Free Version from Freemius
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 1'  # Weekly on Monday
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.0'
+
+    - name: Download Free Version from Freemius
+      run: |
+        # Use Freemius API to download the latest free version
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -d '{"developer_id": "${{ secrets.FREEMIUS_DEV_ID }}", "secret_key": "${{ secrets.FREEMIUS_SECRET_KEY }}"}' \
+          https://api.freemius.com/v1/developers/${{ secrets.FREEMIUS_DEV_ID }}/plugins/${{ secrets.FREEMIUS_PLUGIN_ID }}/tags/latest.zip \
+          -o free-version.zip
+
+    - name: Extract and Process Free Version
+      run: |
+        unzip -o free-version.zip -d temp-extract
+        # Remove premium-only files if needed
+        # Copy to plugin directory
+        cp -r temp-extract/* ./plugin-name/
+        rm -rf temp-extract free-version.zip
+
+    - name: Commit and Push
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Sync free version from Freemius" || echo "No changes to commit"
+        git push

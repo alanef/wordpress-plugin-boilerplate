@@ -1,0 +1,21 @@
+name: Deploy to Freemius
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Deploy to Freemius
+      uses: Freemius/wordpress-sdk-deploy@v1
+      with:
+        dev_id: ${{ secrets.FREEMIUS_DEV_ID }}
+        plugin_id: ${{ secrets.FREEMIUS_PLUGIN_ID }}
+        public_key: ${{ secrets.FREEMIUS_PUBLIC_KEY }}
+        secret_key: ${{ secrets.FREEMIUS_SECRET_KEY }}
