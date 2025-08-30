@@ -39,6 +39,7 @@
         <properties>
             <property name="text_domain" type="array">
                 <element value="plugin-name"/>
+                <element value="my-awesome-wp-boilerplate"/>
             </property>
         </properties>
     </rule>

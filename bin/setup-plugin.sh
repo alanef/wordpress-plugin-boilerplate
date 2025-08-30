@@ -163,6 +163,10 @@ find . -type f \( \
     
     # Perform replacements
     sed \
+        -e "s/My Awesome WP Boilerplate/$PLUGIN_NAME/g" \
+        -e "s/MyAwesomeWPBoilerplate/$PLUGIN_NAMESPACE/g" \
+        -e "s/my-awesome-wp-boilerplate/$PLUGIN_SLUG/g" \
+        -e "s/my_awesome_wp_boilerplate/$PLUGIN_SLUG_UNDERSCORE/g" \
         -e "s/Plugin Name/$PLUGIN_NAME/g" \
         -e "s/PluginName/$PLUGIN_NAMESPACE/g" \
         -e "s/plugin-name/$PLUGIN_SLUG/g" \

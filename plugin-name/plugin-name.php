@@ -1,19 +1,19 @@
 <?php
 /**
- * Plugin Name:       Plugin Name
- * Plugin URI:        https://example.com/plugin-name
- * Description:       Brief description of what the plugin does.
+ * Plugin Name:       My Awesome WP Boilerplate
+ * Plugin URI:        https://github.com/alanef/wordpress-plugin-boilerplate
+ * Description:       A standardized, organized, object-oriented foundation for building high-quality WordPress plugins.
  * Version:           1.0.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
- * Author:            Your Name
- * Author URI:        https://example.com
+ * Author:            Alan Fuller
+ * Author URI:        https://github.com/alanef
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       plugin-name
+ * Text Domain:       my-awesome-wp-boilerplate
  * Domain Path:       /languages
  *
- * @package PluginName
+ * @package MyAwesomeWPBoilerplate
  */
 
 // If this file is called directly, abort.
@@ -51,10 +51,8 @@ register_deactivation_hook( __FILE__, 'plugin_name_deactivate' );
  * Initialize the plugin.
  */
 function plugin_name_init() {
-	// Load plugin text domain for translations.
-	load_plugin_textdomain( 'plugin-name', false, dirname( PLUGIN_NAME_BASENAME ) . '/languages' );
-
 	// Hook your plugin initialization here.
+	// Note: Translations are automatically loaded for plugins hosted on WordPress.org since WP 4.6.
 }
 add_action( 'init', 'plugin_name_init' );
 

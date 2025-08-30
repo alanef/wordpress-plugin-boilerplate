@@ -1,58 +1,107 @@
-=== Plugin Name ===
-Contributors: username
-Donate link: https://example.com/
-Tags: tag1, tag2, tag3
+=== My Awesome WP Boilerplate ===
+Contributors: alanef
+Donate link: https://github.com/sponsors/alanef
+Tags: boilerplate, development, framework, wordpress, standards
 Requires at least: 5.8
-Tested up to: 6.4
+Tested up to: 6.8
 Stable tag: 1.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Brief description of what the plugin does (150 chars max).
+A standardized, organized foundation for building high-quality WordPress plugins with best practices built in.
 
 == Description ==
 
-This is the long description. No limit, and you can use Markdown (as well as in the following sections).
+My Awesome WP Boilerplate provides developers with a clean, well-structured starting point for WordPress plugin development. This boilerplate follows WordPress coding standards and includes modern development tools to help you build secure, performant plugins.
 
-For backwards compatibility, if this section is missing, the full length of the short description will be used, and
-Markdown parsed.
+= Key Features =
 
-A few notes about the sections above:
+* **WordPress Coding Standards**: Pre-configured PHPCS with WPCS ruleset
+* **Security Checks**: Built-in security scanning with PHPCompatibility checks
+* **Modern Development**: Composer and npm ready with autoloading
+* **CI/CD Ready**: GitHub Actions workflows for automated testing and deployment
+* **Translation Ready**: Proper internationalization setup with automatic POT generation
+* **Clean Architecture**: Organized file structure following best practices
+* **Developer Friendly**: Easy customization with clear documentation
 
-* "Contributors" is a comma separated list of wordpress.org usernames
-* "Tags" is a comma separated list of tags that apply to the plugin
-* "Requires at least" is the lowest version that the plugin will work on
-* "Tested up to" is the highest version that you've *successfully used to test the plugin*
+= Development Tools Included =
+
+* PHP_CodeSniffer with WordPress Coding Standards
+* PHPUnit testing framework with WordPress polyfills
+* Automated build and release processes
+* Security and compatibility checking
+* Translation file generation
+
+= Perfect For =
+
+* Starting new WordPress plugin projects
+* Learning WordPress plugin development best practices
+* Building plugins for WordPress.org repository
+* Creating premium plugins with Freemius integration
+* Developing client plugins with professional standards
 
 == Installation ==
 
-1. Upload the plugin files to the `/wp-content/plugins/plugin-name` directory, or install the plugin through the WordPress plugins screen directly.
+= For Developers =
+
+1. Clone or download the repository from GitHub
+2. Run the setup script: `./bin/setup-plugin.sh`
+3. Install dependencies: `composer install && npm install`
+4. Start developing your awesome plugin!
+
+= For Users =
+
+1. Upload the plugin files to the `/wp-content/plugins/my-awesome-wp-boilerplate` directory
 2. Activate the plugin through the 'Plugins' screen in WordPress
-3. Use the Settings->Plugin Name screen to configure the plugin
-4. (Make your instructions match the desired behavior of your plugin.)
+3. Configure any settings as needed
 
 == Frequently Asked Questions ==
 
-= A question that someone might have =
+= Is this a functional plugin? =
 
-An answer to that question.
+This is a boilerplate/starter template for developers to build their own plugins. It provides the foundation and structure but needs to be customized with your specific functionality.
 
-= What about foo bar? =
+= What PHP version is required? =
 
-Answer to foo bar dilemma.
+PHP 7.4 or higher is required, though the boilerplate can be configured for different PHP versions based on your needs.
+
+= Can I use this for commercial plugins? =
+
+Yes! The boilerplate is GPL licensed and can be used for both free and commercial plugins.
+
+= Does it support multisite? =
+
+Yes, the boilerplate includes considerations for multisite installations in its uninstall routine and can be extended for multisite functionality.
+
+= How do I customize the plugin name? =
+
+Run the included setup script (`./bin/setup-plugin.sh`) which will guide you through renaming all instances of the placeholder names.
 
 == Screenshots ==
 
-1. This screen shot description corresponds to screenshot-1.(png|jpg|jpeg|gif). Screenshots are stored in the /assets directory.
-2. This is the second screen shot
+1. Clean, organized file structure
+2. Automated testing and deployment workflows
+3. WordPress coding standards compliance
 
 == Changelog ==
 
 = 1.0.0 =
 * Initial release
+* WordPress coding standards compliance
+* Security checks integration
+* Automated build processes
+* Translation file generation
+* GitHub Actions CI/CD workflows
+* Modern PHP development setup
 
 == Upgrade Notice ==
 
 = 1.0.0 =
-Initial release of the plugin.
+Initial release of the WordPress plugin boilerplate.
+
+== Developer Resources ==
+
+* [GitHub Repository](https://github.com/alanef/wordpress-plugin-boilerplate)
+* [Report Issues](https://github.com/alanef/wordpress-plugin-boilerplate/issues)
+* [Contributing Guidelines](https://github.com/alanef/wordpress-plugin-boilerplate/blob/main/CONTRIBUTING.md)

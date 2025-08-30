@@ -37,7 +37,7 @@
         "lint": "./vendor/bin/phpcs",
         "lint:fix": "./vendor/bin/phpcbf",
         "phpcs-security": "./vendor/bin/phpcs -p --standard=phpcs_sec.xml",
-        "phpcompat": "./vendor/bin/phpcs -p --standard=PHPCompatibilityWP --ignore=*/vendor/* --extensions=php --runtime-set testVersion 7.4- plugin-name",
+        "phpcompat": "./vendor/bin/phpcs -p --standard=PHPCompatibilityWP --ignore=*/vendor/* --extensions=php --runtime-set testVersion 7.4-",
         "test": "./vendor/bin/phpunit",
         "test:unit": "./vendor/bin/phpunit --testsuite unit",
         "test:integration": "./vendor/bin/phpunit --testsuite integration",
