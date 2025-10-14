@@ -39,7 +39,7 @@ jobs:
       run: |
         TAG_VERSION=${GITHUB_REF#refs/tags/}
         TAG_VERSION=${TAG_VERSION#v}
-        PLUGIN_VERSION=$(grep -oP 'Version:\s*\K\S+' plugin-name/plugin-name.php)
+        PLUGIN_VERSION=$(grep -oP 'Version:\s*\K[^\s]+' plugin-name/plugin-name.php | tr -d '[:space:]')
 
         echo "Tag version: $TAG_VERSION"
         echo "Plugin version: $PLUGIN_VERSION"
@@ -66,7 +66,7 @@ jobs:
         mv plugin-name.zip dist/
         
         # Also rename with version for better release management
-        PLUGIN_VERSION=$(grep -oP 'Version:\s*\K\S+' plugin-name/plugin-name.php)
+        PLUGIN_VERSION=$(grep -oP 'Version:\s*\K[^\s]+' plugin-name/plugin-name.php | tr -d '[:space:]')
         cp dist/plugin-name.zip "dist/plugin-name-${PLUGIN_VERSION}.zip"
         
     - name: Create GitHub Release
