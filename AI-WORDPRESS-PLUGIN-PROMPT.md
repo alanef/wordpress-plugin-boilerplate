@@ -2,6 +2,80 @@
 
 This document provides comprehensive instructions for AI agents to create WordPress plugins that meet all WordPress.org repository requirements and pass the plugin review process.
 
+## ⚠️ CRITICAL: Quality Checks Before Completion
+
+**DO NOT** consider any task complete until ALL of the following quality checks have been run and passed:
+
+### 1. Coding Standards Check (REQUIRED)
+
+```bash
+npm run lint:php
+```
+
+**MUST return with 0 errors and 0 warnings.**
+
+If there are violations:
+1. Run `npm run lint:php:fix` to auto-fix what can be fixed
+2. Manually fix remaining issues
+3. Re-run `npm run lint:php` until it passes completely
+
+### 2. Configuration Verification (REQUIRED)
+
+Verify that `phpcs.xml.dist` has been updated with:
+- Correct text domain matching the plugin slug
+- Proper prefixes (minimum 4 characters) for:
+  - lowercase: `myawesomeplugin_`
+  - UPPERCASE: `MY_AWESOME_PLUGIN_`
+  - CamelCase: `MyAwesomePlugin`
+
+### 3. Name Consistency Check (REQUIRED)
+
+Search for any remaining template names that should have been replaced:
+
+```bash
+# These should return NO results (except in documentation/comments)
+grep -r "plugin-name" ./your-plugin/ --exclude-dir=vendor
+grep -r "plugin_name" ./your-plugin/ --exclude-dir=vendor
+grep -r "PLUGIN_NAME" ./your-plugin/ --exclude-dir=vendor
+```
+
+### 4. Text Domain Verification (REQUIRED)
+
+All translatable strings must use the correct text domain:
+
+```bash
+# Check for strings without text domain
+grep -rn "__(" ./your-plugin/ --exclude-dir=vendor | grep -v "your-plugin-slug"
+grep -rn "_e(" ./your-plugin/ --exclude-dir=vendor | grep -v "your-plugin-slug"
+```
+
+Should return NO results.
+
+### 5. Plugin Activation Test (REQUIRED)
+
+```bash
+# Activate the plugin and check for errors
+npm run env:start
+npm run env:cli -- wp plugin activate your-plugin-slug
+npm run env:cli -- wp plugin list
+```
+
+Plugin should activate without errors.
+
+### Completion Workflow
+
+**ONLY after ALL checks pass:**
+
+1. ✅ Coding standards pass (0 errors, 0 warnings)
+2. ✅ Configuration files updated correctly
+3. ✅ No template names remain
+4. ✅ Text domains are consistent
+5. ✅ Plugin activates successfully
+
+**THEN and ONLY THEN:**
+- Commit changes
+- Push to repository
+
 ## Core Requirements
 
 ### 1. Plugin Header Structure

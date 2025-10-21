@@ -162,9 +162,13 @@ For premium or freemium plugins:
 
 ### Initial Setup
 
+The setup script handles most renaming automatically. For manual renaming or troubleshooting, see [RENAMING-GUIDE.md](RENAMING-GUIDE.md).
+
 1. **Configure Plugin Header**: Edit `your-plugin/your-plugin.php` with your plugin information
 2. **Update Metadata**: Modify `composer.json` and `package.json` with your details
 3. **Set Text Domain**: Ensure your text domain is consistent throughout
+4. **Update phpcs.xml.dist**: Set correct text domain and prefixes (minimum 4 characters)
+5. **Run Quality Checks**: `npm run lint:php` must pass with 0 errors before committing
 
 ### Daily Development
 
@@ -302,6 +306,16 @@ Contributions are welcome! Please:
 ## AI Development
 
 For AI-assisted plugin development, see [AI-WORDPRESS-PLUGIN-PROMPT.md](AI-WORDPRESS-PLUGIN-PROMPT.md) which contains comprehensive instructions for building WordPress.org compliant plugins that will pass review on first submission.
+
+**Important**: The AI prompt now includes mandatory quality checks that must pass before any task is considered complete.
+
+## Plugin Renaming
+
+Need to rename the plugin manually or fix naming issues? See the comprehensive [RENAMING-GUIDE.md](RENAMING-GUIDE.md) which covers:
+- All files and locations that need updating
+- Common naming mistakes to avoid
+- Verification checklist
+- Quick reference for naming patterns
 
 ## License
 
