@@ -54,12 +54,12 @@ jobs:
 
     - name: Check version consistency
       run: |
-        PLUGIN_VERSION=$(sed -n 's/ \* Version:\s*\(.*\)/\1/p' plugin-name/plugin-name.php)
-        CONSTANT_VERSION=$(sed -n "s/define( 'PLUGIN_NAME_VERSION', '\(.*\)' );/\1/p" plugin-name/plugin-name.php)
-        
+        PLUGIN_VERSION=$(sed -n 's/ \* Version:\s*\(.*\)/\1/p' plugin-name/plugin-name.php | xargs)
+        CONSTANT_VERSION=$(sed -n "s/.*PLUGIN_NAME_VERSION.*'\(.*\)'.*/\1/p" plugin-name/plugin-name.php | xargs)
+
         echo "Plugin header version: $PLUGIN_VERSION"
         echo "Version constant: $CONSTANT_VERSION"
-        
+
         if [ "$PLUGIN_VERSION" != "$CONSTANT_VERSION" ]; then
           echo "Version mismatch detected!"
           exit 1
