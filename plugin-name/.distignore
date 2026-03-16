@@ -18,7 +18,14 @@ tests
 bin
 .wp-env.json
 node_modules
-vendor
+vendor/bin
+vendor/**/.git
+vendor/**/tests
+vendor/**/Tests
+vendor/**/docs
+vendor/**/*.md
+vendor/**/composer.json
+vendor/**/composer.lock
 .DS_Store
 Thumbs.db
 *.log

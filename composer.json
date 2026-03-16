@@ -42,7 +42,10 @@
         "test:unit": "./vendor/bin/phpunit --testsuite unit",
         "test:integration": "./vendor/bin/phpunit --testsuite integration",
         "make-pot": "mkdir -p plugin-name/languages && wp i18n make-pot ./plugin-name ./plugin-name/languages/plugin-name.pot --skip-audit --exclude='vendor,node_modules,tests,bin'",
-        "build": "composer run-script make-pot && rm -rf dist && mkdir -p dist && wp dist-archive ./plugin-name ./dist/plugin-name.zip --plugin-dirname=plugin-name"
+        "plugin:install": "cd plugin-name && composer install --no-dev --optimize-autoloader",
+        "plugin:update": "cd plugin-name && composer update --no-dev --optimize-autoloader",
+        "plugin:dump": "cd plugin-name && composer dump-autoload --optimize",
+        "build": "composer run-script plugin:install && composer run-script make-pot && rm -rf dist && mkdir -p dist && wp dist-archive ./plugin-name ./dist/plugin-name.zip --plugin-dirname=plugin-name"
     },
     "scripts-descriptions": {
         "lint": "Run PHP_CodeSniffer to detect coding standard violations",
@@ -51,6 +54,9 @@
         "test:unit": "Run PHPUnit unit tests only",
         "test:integration": "Run PHPUnit integration tests only",
         "make-pot": "Generate POT file for translations",
-        "build": "Build the plugin with language files and create distribution archive"
+        "plugin:install": "Install plugin dependencies and generate autoloader",
+        "plugin:update": "Update plugin dependencies and regenerate autoloader",
+        "plugin:dump": "Regenerate plugin autoloader without installing",
+        "build": "Build the plugin with dependencies, language files and create distribution archive"
     }
 }

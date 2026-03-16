@@ -110,12 +110,29 @@ npm run test
 ### Build & Release
 
 ```bash
-# Build release package
+# Build release package (includes plugin dependencies)
 npm run build
 
 # Setup new plugin from boilerplate
 npm run setup
 ```
+
+### Plugin Dependencies & Autoloading
+
+The plugin has its own `composer.json` with classmap autoloading:
+
+```bash
+# Install plugin dependencies and generate autoloader
+npm run plugin:install
+
+# Update plugin dependencies
+npm run plugin:update
+
+# Regenerate autoloader only (after adding new classes)
+npm run plugin:dump
+```
+
+**Note:** The plugin's `vendor/` directory is included in builds. Classes are autoloaded via `vendor/autoload.php`.
 
 ## Deployment Strategies
 

@@ -21,6 +21,11 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
+// Load Composer autoloader.
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor/autoload.php';
+}
+
 // Define plugin constants.
 define( 'PLUGIN_NAME_VERSION', '1.0.0' );
 define( 'PLUGIN_NAME_PATH', plugin_dir_path( __FILE__ ) );
