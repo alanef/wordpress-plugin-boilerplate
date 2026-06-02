@@ -66,7 +66,22 @@ jobs:
         fi
 
     - name: Install WP-CLI dist-archive command
-      run: wp package install wp-cli/dist-archive-command:v3.1.0
+      env:
+        # WP-CLI's bundled Composer rejects the runner's ghs_ token when
+        # GitHub's longer stateless-token format is in play (its oauth-token
+        # validation fails on the format), which makes this step flake. The
+        # token is persisted in a config FILE by setup-php, so clearing env
+        # vars alone is not enough — strip the persisted github-oauth from
+        # every composer home (default + wp-cli's own) and clone the public
+        # command anonymously with empty Composer auth.
+        GITHUB_TOKEN: ""
+        COMPOSER_AUTH: "{}"
+      run: |
+        composer config --global --unset github-oauth.github.com 2>/dev/null || true
+        rm -f "$HOME/.composer/auth.json" \
+              "$HOME/.config/composer/auth.json" \
+              "$HOME/.wp-cli/packages/auth.json" 2>/dev/null || true
+        wp package install wp-cli/dist-archive-command:v3.1.0
 
     - name: Build plugin
       run: |
@@ -74,7 +89,66 @@ jobs:
         mkdir tmp-build
         unzip dist/plugin-name.zip -d tmp-build
 
-    - name: WordPress Plugin Check
-      uses: wordpress/plugin-check-action@v1
-      with:
-        build-dir: 'tmp-build/plugin-name'
+    # NOTE: wordpress/plugin-check-action@v1 installs the *latest* @wordpress/env
+    # at runtime (`npm -g i @wordpress/env`, no version pin). 11.7.0 (2026-05-27)
+    # intermittently leaves the container "Environment not initialized" in CI, so
+    # we run Plugin Check by hand against the pinned, last-known-good 11.6.0.
+    - name: WordPress Plugin Check (pinned @wordpress/env)
+      run: |
+        set -euo pipefail
+        PLUGIN_SLUG="plugin-name"
+        PLUGIN_DIR="$(realpath "tmp-build/${PLUGIN_SLUG}")"
+
+        npm -g --no-fund i @wordpress/env@11.6.0
+
+        cat > .wp-env.json <<EOF
+        { "core": null, "port": 8880, "testsPort": 8881, "plugins": [ "https://downloads.wordpress.org/plugin/plugin-check.zip" ], "mappings": { "wp-content/plugins/${PLUGIN_SLUG}": "${PLUGIN_DIR}" } }
+        EOF
+
+        # wp-env start can flake; retry, resetting between attempts.
+        started=0
+        for i in 1 2 3; do
+          if wp-env start --update; then started=1; break; fi
+          echo "wp-env start attempt $i failed; retrying..."
+          wp-env stop >/dev/null 2>&1 || true
+          sleep 5
+        done
+        [ "$started" = "1" ] || { echo "::error::wp-env failed to start"; exit 1; }
+
+        # Confirm the environment is actually usable before checking.
+        wp-env run cli wp cli info
+        wp-env run cli wp plugin activate "$PLUGIN_SLUG"
+
+        # Keep stdout as clean JSON; send wp-env's own chatter to a separate file.
+        wp-env run cli wp plugin check "$PLUGIN_SLUG" \
+          --format=json \
+          --exclude-files=.wp-env.json \
+          --require=./wp-content/plugins/plugin-check/cli.php \
+          > pc-results.json 2> pc-stderr.txt || true
+        echo "--- Plugin Check stderr ---"; cat pc-stderr.txt || true
+        echo "--- Plugin Check results ---"; cat pc-results.json || true
+
+        # A clean run prints a plain-text "No errors found." (not JSON).
+        if grep -q "No errors found" pc-results.json; then
+          echo "Plugin Check: clean (no findings)."
+          exit 0
+        fi
+
+        # Otherwise plugin-check prints, per file, a "FILE: <path>" header
+        # followed by a JSON array of findings — so the file as a whole is NOT
+        # a single JSON document. Slurp just the array lines and tally by type.
+        # Fail closed if there is neither a clean marker nor any array.
+        ARRAYS="$(grep '^\[' pc-results.json || true)"
+        if [ -z "$ARRAYS" ]; then
+          echo "::error::Plugin Check produced no parseable results (see log above)"
+          exit 1
+        fi
+        ERRORS="$(printf '%s\n' "$ARRAYS" | jq -s '[.[][] | select(.type == "ERROR")] | length')"
+        WARNINGS="$(printf '%s\n' "$ARRAYS" | jq -s '[.[][] | select(.type == "WARNING")] | length')"
+
+        echo "Plugin Check: ${ERRORS} error(s), ${WARNINGS} warning(s) — warnings are advisory."
+        if [ "${ERRORS}" -gt 0 ]; then
+          echo "::error::Plugin Check reported ${ERRORS} error(s)"
+          exit 1
+        fi
+        echo "Plugin Check: passed (no errors)."
