@@ -27,6 +27,7 @@ CANON_DEV = {"squizlabs/php_codesniffer", "wp-coding-standards/wpcs", "phpcompat
 GITIGNORE_DROP = {"package-lock.json", "/package-lock.json", "composer.lock", "/composer.lock", "yarn.lock"}
 
 log = lambda *a: print("  -", *a)
+semver = lambda v: tuple(int(x) for x in re.findall(r"\d+", v)[:3])  # "^11.14.0" -> (11, 14, 0)
 
 
 def sh(cmd, cwd):
@@ -174,12 +175,18 @@ def main():
         write(P(".wp-env.override.json.example"), R("wp-env.override.json.example"))
 
     # package.json / composer.json.
+    pj = json.loads(R("package.json"))
     if os.path.exists(P("package.json")):
-        old = json.load(open(P("package.json"))).get("scripts", {})
-        dropped = sorted(set(old) - {"wp-env", "start", "stop", "destroy", "test", "test:unit", "build"})
+        old = json.load(open(P("package.json")))
+        dropped = sorted(set(old.get("scripts", {})) - {"wp-env", "start", "stop", "destroy", "test", "test:unit", "build"})
         if dropped:
             log("package.json: dropped non-standard scripts", dropped)
-    write(P("package.json"), R("package.json"))
+        if old.get("version"):
+            pj["version"] = old["version"]
+        for pkg, ver in old.get("devDependencies", {}).items():
+            if pkg in pj["devDependencies"] and semver(ver) > semver(pj["devDependencies"][pkg]):
+                pj["devDependencies"][pkg] = ver; log("package.json: kept newer dev package", pkg, ver)
+    write(P("package.json"), json.dumps(pj, indent=2) + "\n")
     cj = json.loads(R("composer.json"))
     if os.path.exists(P("composer.json")):
         old = json.load(open(P("composer.json")))
