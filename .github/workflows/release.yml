@@ -11,6 +11,23 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# Configure deployment via GitHub repository variables:
+#   vars.DEPLOY_TARGET = 'freemius' | 'wordpress' | '' (GitHub release only)
+#
+# For Freemius deployment, set these secrets:
+#   FREEMIUS_DEV_ID, FREEMIUS_PUBLIC_KEY, FREEMIUS_SECRET_KEY, FREEMIUS_PLUGIN_ID
+#   SSH_PRIVATE_KEY (for pushing free version to free repo)
+# And set this variable:
+#   vars.FREE_REPO (e.g. 'alanef/plugin-name')
+#
+# For WordPress.org SVN deployment, set these secrets:
+#   SVN_USERNAME, SVN_PASSWORD
+# And set this variable:
+#   vars.SVN_SLUG (e.g. 'plugin-name')
+
 jobs:
   quality-checks:
     uses: ./.github/workflows/checks.yml
@@ -18,7 +35,7 @@ jobs:
   release:
     needs: quality-checks
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
 
@@ -53,6 +70,9 @@ jobs:
       run: |
         composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
 
+    - name: Install plugin production dependencies
+      run: composer install --no-dev --prefer-dist --no-progress --optimize-autoloader -d plugin-name
+
     - name: Install WP-CLI dist-archive command
       run: wp package install wp-cli/dist-archive-command:v3.1.0
 
@@ -60,32 +80,200 @@ jobs:
       run: |
         # Use WP-CLI to build the plugin archive
         wp dist-archive ./plugin-name ./plugin-name.zip
-        
+
         # Create dist directory for consistency with build script
         mkdir -p dist
         mv plugin-name.zip dist/
-        
+
         # Also rename with version for better release management
         PLUGIN_VERSION=$(grep -oP 'Version:\s*\K[0-9a-zA-Z.-]+' plugin-name/plugin-name.php)
         cp dist/plugin-name.zip "dist/plugin-name-${PLUGIN_VERSION}.zip"
-        
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         files: dist/*.zip
         body: |
           Release of Plugin Name v${{ github.ref_name }}
-          
+
           ## Installation
           1. Download `plugin-name.zip` from the assets below
           2. In WordPress admin, go to Plugins > Add New > Upload Plugin
           3. Choose the downloaded zip file and click Install Now
           4. Activate the plugin
           5. Configure the plugin in Settings > Plugin Name
-          
+
           ## Changelog
           See [readme.txt](plugin-name/readme.txt) for detailed changelog.
         draft: false
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-freemius:
+    if: vars.DEPLOY_TARGET == 'freemius'
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '7.4'
+        tools: composer:v2, wp-cli
+
+    - name: Extract plugin version
+      id: plugin_version
+      run: |
+        VERSION=$(grep -oP 'Version:\s*\K[0-9a-zA-Z.-]+' plugin-name/plugin-name.php)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Install plugin dependencies
+      run: composer install --no-dev --prefer-dist --no-progress --optimize-autoloader -d plugin-name
+
+    - name: Install WP-CLI dist-archive command
+      run: wp package install wp-cli/dist-archive-command:v3.1.0
+
+    - name: Install deployment script dependencies
+      run: |
+        cd .github/scripts
+        npm install
+
+    - name: Build plugin zip
+      run: |
+        wp dist-archive ./plugin-name ./plugin-name.zip
+
+    - name: Deploy to Freemius
+      id: freemius_deploy
+      run: |
+        node .github/scripts/deploy-to-freemius.js
+      env:
+        FREEMIUS_DEV_ID: ${{ secrets.FREEMIUS_DEV_ID }}
+        FREEMIUS_PUBLIC_KEY: ${{ secrets.FREEMIUS_PUBLIC_KEY }}
+        FREEMIUS_SECRET_KEY: ${{ secrets.FREEMIUS_SECRET_KEY }}
+        FREEMIUS_PLUGIN_ID: ${{ secrets.FREEMIUS_PLUGIN_ID }}
+        PLUGIN_ZIP_PATH: plugin-name.zip
+        PLUGIN_VERSION: ${{ steps.plugin_version.outputs.version }}
+        RELEASE_MODE: beta
+        SANDBOX: false
+
+    - name: Setup SSH key
+      if: steps.freemius_deploy.outputs.free_version != ''
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Push free version to free repo
+      if: steps.freemius_deploy.outputs.free_version != ''
+      run: |
+        echo "Free version file: ${{ steps.freemius_deploy.outputs.free_version }}"
+        echo "Tag ID: ${{ steps.freemius_deploy.outputs.tag_id }}"
+
+        # Verify free version file exists
+        if [ ! -f "${{ steps.freemius_deploy.outputs.free_version }}" ]; then
+          echo "ERROR: Free version file not found"
+          exit 1
+        fi
+
+        # Configure git
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Clone free repo using SSH
+        git clone git@github.com:${{ vars.FREE_REPO }}.git free-repo
+        cd free-repo
+
+        # Extract free version over the repo (excluding .git, .github, and .wordpress-org)
+        find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name '.github' ! -name '.wordpress-org' -exec rm -rf {} +
+
+        # Extract the free version
+        unzip -q -o ../${{ steps.freemius_deploy.outputs.free_version }}
+
+        # Move contents from extracted directory to root
+        if [ -d "plugin-name" ]; then
+          mv plugin-name/* plugin-name/.* . 2>/dev/null || true
+          rmdir plugin-name
+        fi
+
+        # Commit and push
+        git add .
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto-sync from Freemius deployment v${{ steps.plugin_version.outputs.version }}"
+          git push origin master
+          echo "Free version pushed to master branch"
+        fi
+
+  deploy-wordpress-svn:
+    if: vars.DEPLOY_TARGET == 'wordpress'
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Extract PHP version
+      id: php_version
+      run: |
+        PHP_VERSION=$(grep -oP 'Requires PHP:\s*\K[\d.]+' plugin-name/plugin-name.php || echo "7.4")
+        echo "version=$PHP_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ steps.php_version.outputs.version }}
+        tools: composer:v2, wp-cli
+
+    - name: Extract plugin version
+      id: plugin_version
+      run: |
+        VERSION=$(grep -oP 'Version:\s*\K[0-9a-zA-Z.-]+' plugin-name/plugin-name.php)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+    - name: Install plugin production dependencies
+      run: composer install --no-dev --prefer-dist --no-progress --optimize-autoloader -d plugin-name
+
+    - name: Install WP-CLI dist-archive command
+      run: wp package install wp-cli/dist-archive-command:v3.1.0
+
+    - name: Build plugin zip
+      run: |
+        wp dist-archive ./plugin-name ./plugin-name.zip
+
+    - name: Deploy to WordPress.org
+      env:
+        SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+        SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+      run: |
+        sudo apt-get update && sudo apt-get install -y subversion
+
+        # Extract plugin to temporary directory
+        mkdir -p svn-tmp
+        cd svn-tmp
+        unzip ../plugin-name.zip
+
+        # Checkout SVN repository
+        svn checkout https://plugins.svn.wordpress.org/${{ vars.SVN_SLUG }}/ svn-repo --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache
+
+        # Copy files to trunk
+        rsync -av --delete --exclude='.svn' plugin-name/ svn-repo/trunk/
+
+        # Add new files and remove deleted files
+        cd svn-repo/trunk
+        svn add --force * --auto-props --parents --depth infinity -q || true
+        svn delete $( svn status | sed -e '/^!/!d' -e 's/^!//' ) || true
+
+        # Copy to tags
+        cd ..
+        svn cp trunk tags/${{ steps.plugin_version.outputs.version }}
+
+        # Commit to SVN
+        svn commit -m "Release version ${{ steps.plugin_version.outputs.version }}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache
+
+        echo "Successfully deployed to WordPress.org"
