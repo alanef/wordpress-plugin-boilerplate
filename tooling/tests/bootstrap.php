@@ -48,7 +48,9 @@ function _fullworks_load_plugin_under_test() {
 
 	require $plugin_file;
 
-	// Activation hooks do not fire in the test environment.
+	// Activation hooks do not fire in the test environment. Real activation runs in the
+	// admin context, so load the admin includes (filesystem, upgrade, plugin helpers) first.
+	require_once ABSPATH . 'wp-admin/includes/admin.php';
 	do_action( 'activate_' . plugin_basename( $plugin_file ) );
 }
 
