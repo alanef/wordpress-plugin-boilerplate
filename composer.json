@@ -35,7 +35,7 @@
       "if [ -f plugin-name/composer.json ]; then composer install -d plugin-name --no-dev; fi",
       "mkdir -p zipped",
       "wp dist-archive plugin-name zipped/plugin-name-free.zip --force",
-      "zip -qd zipped/plugin-name-free.zip plugin-name/.distignore 2>/dev/null || true"
+      "zip -qd zipped/plugin-name-free.zip plugin-name/.distignore >/dev/null 2>&1 || true"
     ],
     "phpcs": "phpcs plugin-name -s --standard=phpcs_sec.xml --ignore=*/vendor/* --extensions=php",
     "compat:8.4": "phpcs plugin-name -s --standard=PHPCompatibilityWP --ignore=*/vendor/* --extensions=php --runtime-set testVersion 8.4",
