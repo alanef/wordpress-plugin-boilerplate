@@ -112,6 +112,12 @@ jobs:
       - name: List shipped files
         run: unzip -l "zipped/$PLUGIN_DIR-free.zip"
 
+      - name: Drop any local wp-env override
+        # A committed .wp-env.override.json makes wp-env mount the source directory
+        # over the action's build-dir mapping, so Plugin Check would inspect the
+        # repository (with .distignore etc.) instead of the built zip.
+        run: rm -f .wp-env.override.json
+
       - name: Run plugin check
         uses: wordpress/plugin-check-action@v1
         with:

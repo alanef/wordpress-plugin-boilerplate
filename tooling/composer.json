@@ -34,8 +34,7 @@
     "build": [
       "if [ -f __PLUGIN_DIR__/composer.json ]; then composer install -d __PLUGIN_DIR__ --no-dev; fi",
       "mkdir -p zipped",
-      "wp dist-archive __PLUGIN_DIR__ zipped/__PLUGIN_DIR__-free.zip --force",
-      "zip -qd zipped/__PLUGIN_DIR__-free.zip __PLUGIN_DIR__/.distignore >/dev/null 2>&1 || true"
+      "wp dist-archive __PLUGIN_DIR__ zipped/__PLUGIN_DIR__-free.zip --force"
     ],
     "phpcs": "phpcs __PLUGIN_DIR__ -s --standard=phpcs_sec.xml --ignore=*/vendor/* --extensions=php",
 __COMPAT_SCRIPTS__
