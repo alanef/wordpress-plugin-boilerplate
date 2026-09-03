@@ -109,6 +109,9 @@ jobs:
           mkdir tmp-build
           unzip -q "zipped/$PLUGIN_DIR-free.zip" -d tmp-build
 
+      - name: List shipped files
+        run: unzip -l "zipped/$PLUGIN_DIR-free.zip"
+
       - name: Run plugin check
         uses: wordpress/plugin-check-action@v1
         with:
