@@ -30,7 +30,10 @@ jobs:
         id: php_version
         run: |
           PHP_VERSION=$(grep -m1 "Requires PHP:" "$PLUGIN_FILE" | sed -E 's/.*Requires PHP:[[:space:]]*//' | tr -d ' \r')
-          echo "PHP_VERSION=${PHP_VERSION:-7.4}" >> $GITHUB_OUTPUT
+          PHP_VERSION=${PHP_VERSION:-7.4}
+          # The dev tooling (PHPUnit 9, PHPCS 3) needs PHP 7.4+, whatever the plugin itself supports.
+          if [ "$(printf '%s\n' "$PHP_VERSION" 7.4 | sort -V | head -1)" != "7.4" ]; then PHP_VERSION=7.4; fi
+          echo "PHP_VERSION=$PHP_VERSION" >> $GITHUB_OUTPUT
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
