@@ -73,7 +73,8 @@ def detect(target, args):
     php_min = header(main_php, "Requires PHP") or "7.4"
     if php_min not in ALL_PHP:
         php_min = "7.4"
-    m = re.search(r"define\(\s*['\"]([A-Z0-9_]*VERSION[A-Z0-9_]*)['\"]", main_php)
+    # The version constant: a define() named *VERSION* whose value looks like a version number.
+    m = re.search(r"define\(\s*['\"]([A-Z0-9_]*VERSION[A-Z0-9_]*)['\"]\s*,\s*['\"]\d+\.\d+", main_php)
     branch = sh("git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null", target).replace("origin/", "") \
         or sh("git rev-parse --abbrev-ref HEAD", target)
     remote = sh("git remote get-url origin", target)
@@ -181,9 +182,6 @@ def main():
         for name, val in old.get("scripts", {}).items():
             if name not in cj["scripts"] and name not in LEGACY_SCRIPTS and not name.startswith("compat:"):
                 cj["scripts"][name] = val; log("composer.json: kept extra script", name)
-        for k in ("repositories",):
-            if k in old:
-                cj[k] = old[k]
     write(P("composer.json"), json.dumps(cj, indent=2) + "\n")
     if os.path.exists(P("phpcs.xml.dist")) and not os.path.exists(P("phpcs.xml")):
         shutil.move(P("phpcs.xml.dist"), P("phpcs.xml")); log("renamed phpcs.xml.dist -> phpcs.xml")
