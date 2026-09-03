@@ -1,25 +1,28 @@
 {
-    "plugins": [
-        "./plugin-name"
-    ],
-    "config": {
+  "phpVersion": "8.4",
+  "plugins": [
+    "./plugin-name"
+  ],
+  "port": 8780,
+  "testsPort": 8781,
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "WP_DEBUG_DISPLAY": true,
+    "SCRIPT_DEBUG": true
+  },
+  "mappings": {
+    "tests": "./tests",
+    "vendor": "./vendor",
+    "phpunit.xml.dist": "./phpunit.xml.dist"
+  },
+  "env": {
+    "tests": {
+      "config": {
         "WP_DEBUG": true,
         "WP_DEBUG_LOG": true,
-        "WP_DEBUG_DISPLAY": true,
-        "SCRIPT_DEBUG": true
-    },
-    "phpVersion": "8.0",
-    "env": {
-        "tests": {
-            "plugins": [
-                "./plugin-name"
-            ],
-            "port": 8889,
-            "config": {
-                "WP_DEBUG": true,
-                "WP_DEBUG_LOG": true,
-                "WP_DEBUG_DISPLAY": false
-            }
-        }
+        "WP_DEBUG_DISPLAY": false
+      }
     }
+  }
 }

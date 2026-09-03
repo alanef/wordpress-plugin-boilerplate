@@ -5,7 +5,7 @@ A modern, comprehensive WordPress plugin boilerplate with built-in support for m
 ## Features
 
 - 🚀 **Quick Setup** - Get a working plugin in under 5 minutes
-- 📦 **Multiple Deployment Options** - GitHub, WordPress.org SVN, Freemius
+- 📦 **Deployment** - GitHub release and WordPress.org SVN on tag
 - 🔧 **Modern Development Tools** - wp-env, PHPCS, PHPUnit
 - ✅ **WordPress Coding Standards** - Pre-configured and enforced
 - 🏗️ **Build System** - Automated release builds
@@ -29,7 +29,7 @@ A modern, comprehensive WordPress plugin boilerplate with built-in support for m
    ```
 5. Start development:
    ```bash
-   npm run env:start
+   npm run start
    ```
 
 ### Method 2: Clone and Configure
@@ -50,7 +50,7 @@ composer install
 npm install
 
 # Start development environment
-npm run env:start
+npm run start
 ```
 
 ## Project Structure
@@ -59,211 +59,80 @@ npm run env:start
 wordpress-plugin-boilerplate/
 ├── .github/                      # GitHub Actions workflows
 │   ├── workflows/
-│   │   ├── checks.yml            # Quality checks (PHPCS, compatibility, security)
-│   │   ├── release.yml           # Automated release builds with quality checks
-│   │   └── *.yml.example          # Optional deployment workflows
-│   └── ISSUE_TEMPLATE/            # Issue templates
+│   │   ├── checks.yml            # PHPCS, version consistency, Plugin Check, PHPUnit
+│   │   └── release.yml           # GitHub release + WordPress.org SVN deploy on tag
 ├── plugin-name/                   # Main plugin directory
 │   ├── plugin-name.php            # Main plugin file
 │   ├── readme.txt                 # WordPress.org readme
 │   ├── uninstall.php              # Cleanup on uninstall
 │   └── .distignore                # Build exclusions
-├── tests/                         # PHPUnit tests
-├── bin/                           # Build and setup scripts
+├── tests/                         # PHPUnit tests (run inside wp-env)
+├── tooling/                       # Canonical tooling templates rolled out to every plugin
+├── bin/setup-plugin.sh            # Create a new plugin from the boilerplate
+├── bin/sync-tooling.sh            # Roll the tooling out to a plugin repository
 ├── .wp-env.json                   # Local development config
-├── composer.json                  # PHP dependencies
-├── package.json                   # Node dependencies
-└── phpcs.xml.dist                 # Coding standards config
+├── phpunit.xml.dist, run-tests.sh
+├── composer.json                  # PHP dev dependencies and scripts
+├── package.json                   # wp-env and test scripts
+└── phpcs.xml, phpcs_sec.xml       # Coding standards config
 ```
 
 ## Available Commands
 
-### Development
+The tooling is identical in every Fullworks free plugin repository and documented in full
+in [CLAUDE.md](CLAUDE.md) (the master tooling guide).
 
 ```bash
-# Start local WordPress environment
-npm run env:start
-
-# Stop environment
-npm run env:stop
-
-# Reset environment
-npm run env:reset
-
-# Access WP-CLI
-npm run env:cli
+composer install && npm install    # dev tools
+composer run check                 # PHPCompatibility (Requires PHP .. 8.4) + WordPress security sniffs
+npm run start | stop | destroy     # wp-env: dev site and tests site (admin / password)
+npm test                           # PHPUnit inside the wp-env tests container
+npm test -- --filter Name          # pass PHPUnit arguments through
+composer run build                 # zipped/<plugin>-free.zip via wp dist-archive (.distignore applies)
+composer run make-pot              # regenerate the .pot file
 ```
 
-### Code Quality
+## CI and deployment
 
-```bash
-# Check PHP coding standards
-npm run lint:php
+- `checks.yml` runs on push and pull request: PHPCS, version consistency, a dist-archive
+  build, WordPress Plugin Check on the built zip, and the PHPUnit suite in wp-env.
+- `release.yml` runs on a `vX.Y.Z` tag: re-runs the checks, creates the GitHub release with
+  the versioned zip attached and deploys trunk + tag to WordPress.org SVN. Add the
+  `SVN_USERNAME` and `SVN_PASSWORD` repository secrets to enable the deploy.
 
-# Fix PHP coding standards
-npm run lint:php:fix
+Release: update `CHANGELOG.md`, set the version in the plugin header, `readme.txt` Stable tag
+and the version constant, commit, tag `vX.Y.Z`, push.
 
-# Run PHPUnit tests
-npm run test
-```
+## Rolling the tooling out to other plugins
 
-### Build & Release
-
-```bash
-# Build release package (includes plugin dependencies)
-npm run build
-
-# Setup new plugin from boilerplate
-npm run setup
-```
-
-### Plugin Dependencies & Autoloading
-
-The plugin has its own `composer.json` with classmap autoloading:
-
-```bash
-# Install plugin dependencies and generate autoloader
-npm run plugin:install
-
-# Update plugin dependencies
-npm run plugin:update
-
-# Regenerate autoloader only (after adding new classes)
-npm run plugin:dump
-```
-
-**Note:** The plugin's `vendor/` directory is included in builds. Classes are autoloaded via `vendor/autoload.php`.
-
-## Deployment Strategies
-
-### 1. GitHub Only (Default)
-
-The simplest deployment strategy. Push tags to trigger automated GitHub releases.
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-The `release.yml` workflow will run quality checks and automatically create a release with the plugin ZIP file.
-
-### 2. WordPress.org SVN Repository
-
-For free plugins distributed via WordPress.org:
-
-1. Rename `.github/workflows/deploy-wordpress-svn.yml.example` to `.github/workflows/deploy-wordpress-svn.yml`
-2. Add secrets to your GitHub repository:
-   - `SVN_USERNAME` - Your WordPress.org username
-   - `SVN_PASSWORD` - Your WordPress.org password
-   - `SLUG` - Your plugin slug on WordPress.org
-
-### 3. Freemius Integration
-
-For premium or freemium plugins:
-
-#### Premium Only
-1. Rename `.github/workflows/deploy-freemius.yml.example` to `.github/workflows/deploy-freemius.yml`
-2. Add Freemius secrets to GitHub:
-   - `FREEMIUS_DEV_ID`
-   - `FREEMIUS_PLUGIN_ID`
-   - `FREEMIUS_PUBLIC_KEY`
-   - `FREEMIUS_SECRET_KEY`
-
-#### Freemium (Free + Premium)
-1. Use both Freemius deployment and sync workflows
-2. Rename `.github/workflows/sync-freemius-free.yml.example` to `.github/workflows/sync-freemius-free.yml`
-3. This will sync the free version from Freemius to your public repository
-4. For advanced automation setup, see [FREEMIUS-WORKFLOW-SETUP.md](FREEMIUS-WORKFLOW-SETUP.md)
-
-## Development Workflow
-
-### Initial Setup
-
-The setup script handles most renaming automatically. For manual renaming or troubleshooting, see [RENAMING-GUIDE.md](RENAMING-GUIDE.md).
-
-1. **Configure Plugin Header**: Edit `your-plugin/your-plugin.php` with your plugin information
-2. **Update Metadata**: Modify `composer.json` and `package.json` with your details
-3. **Set Text Domain**: Ensure your text domain is consistent throughout
-4. **Update phpcs.xml.dist**: Set correct text domain and prefixes (minimum 4 characters)
-5. **Run Quality Checks**: `npm run lint:php` must pass with 0 errors before committing
-
-### Daily Development
-
-1. **Start Environment**: `npm run env:start`
-2. **Access WordPress**: http://localhost:8888 (admin/password)
-3. **Make Changes**: Edit files in your plugin directory
-4. **Test Changes**: Your plugin is auto-mounted in the local environment
-5. **Run Tests**: `npm run test`
-6. **Check Standards**: `npm run lint:php`
-
-### Release Process
-
-1. **Update Version**: In main plugin file and readme.txt
-2. **Update Changelog**: In readme.txt
-3. **Commit Changes**: `git commit -am "Version 1.0.1"`
-4. **Tag Release**: `git tag v1.0.1`
-5. **Push**: `git push && git push --tags`
+`tooling/` holds the templates and `bin/sync-tooling.sh <repo>` renders them into a plugin
+repository (workflows, test runner, PHPUnit config, wp-env mappings, composer/npm scripts,
+managed blocks in CLAUDE.md and README.md). Fix tooling here first, then sync each plugin.
+See [CLAUDE.md](CLAUDE.md#rolling-out-a-tooling-change).
 
 ## Testing
 
-### PHPUnit Setup
-
-Tests are configured to run in the wp-env environment:
-
 ```bash
-# Run all tests
-npm run test
-
-# Run specific test suite
-npm run test:unit
-npm run test:integration
+npm test
 ```
 
-### Writing Tests
-
-Place test files in:
-- `tests/unit/` - Unit tests
-- `tests/integration/` - Integration tests
-
-Example test included in `tests/test-sample.php`
+`tests/bootstrap.php` loads the plugin into the WordPress core test library inside the wp-env
+tests container. Add tests as `tests/test-*.php` or `tests/**/*Test.php`, extending
+`WP_UnitTestCase`. `tests/test-sample.php` is an example.
 
 ## Coding Standards
 
-This boilerplate enforces WordPress Coding Standards:
-
-```bash
-# Check for violations
-composer run lint
-
-# Auto-fix violations
-composer run lint:fix
-```
-
-Configuration in `phpcs.xml.dist` includes:
-- WordPress-Core
-- WordPress-Docs
-- WordPress-Extra
-- PHP Compatibility checks
+`composer run check` runs PHPCompatibilityWP for every PHP version from the plugin's
+`Requires PHP` up to 8.4, then the WordPress security sniffs in `phpcs_sec.xml`.
+`phpcs.xml` (WordPress-Extra) is available for local use: `vendor/bin/phpcs --standard=phpcs.xml <plugin-dir>`.
 
 ## Configuration Files
 
-### `.wp-env.json`
-Local WordPress environment configuration. Modify to:
-- Change PHP version
-- Add additional plugins
-- Configure WordPress settings
-
-### `phpcs.xml.dist`
-Coding standards configuration. Customize:
-- Text domain
-- Function prefixes
-- Excluded files/directories
-
-### `.distignore`
-Files excluded from distribution builds. Add:
-- Development files
-- Build tools
-- Documentation
+- `.wp-env.json` - local WordPress environments (dev and tests ports, PHP version, plugin and
+  test mappings). Local-only tweaks go in `.wp-env.override.json` (see the `.example`).
+- `phpcs.xml`, `phpcs_sec.xml` - coding standards.
+- `<plugin-dir>/.distignore` - files excluded from the distribution zip.
+- `.tooling.json` (optional) - pins values for `bin/sync-tooling.sh` (SVN slug, ports).
 
 ## Requirements
 
@@ -277,11 +146,12 @@ Files excluded from distribution builds. Add:
 
 ### Port Conflicts
 
-If port 8888 is in use, modify `.wp-env.json`:
+If a port is in use, modify `.wp-env.json` (and `.tooling.json` so syncs keep it):
 
 ```json
 {
-    "port": 8889
+    "port": 8790,
+    "testsPort": 8791
 }
 ```
 
@@ -345,3 +215,35 @@ Created with best practices from the WordPress community and modern development 
 ---
 
 **Note**: Remember to update this README with your actual plugin information after running the setup script!
+
+<!-- tooling:start (managed by wordpress-plugin-boilerplate/tooling - do not edit by hand) -->
+## Development
+
+This repository uses the standard Fullworks free-plugin tooling, documented in
+[wordpress-plugin-boilerplate](https://github.com/alanef/wordpress-plugin-boilerplate/blob/main/CLAUDE.md).
+
+[![Plugin Check](https://github.com/alanef/wordpress-plugin-boilerplate/actions/workflows/checks.yml/badge.svg)](https://github.com/alanef/wordpress-plugin-boilerplate/actions/workflows/checks.yml)
+
+```
+wordpress-plugin-boilerplate/                     # repository root: development tooling
+├── .github/workflows/             # checks.yml on push/PR, release.yml on tag
+├── tests/                         # PHPUnit suite, run inside wp-env
+├── .wp-env.json                   # dev :8780, tests :8781
+├── composer.json                  # dev dependencies and quality scripts
+├── package.json                   # wp-env and test scripts
+├── phpunit.xml.dist / run-tests.sh
+└── plugin-name/                # the plugin (shipped as-is via .distignore)
+```
+
+```bash
+composer install && npm install        # dev tools
+npm run start                          # http://localhost:8780  (admin / password)
+composer run check                     # PHPCompatibility + security sniffs
+npm test                               # PHPUnit in the wp-env tests container
+composer run build                     # zipped/plugin-name-free.zip
+```
+
+Releases: set the version in the plugin header and `readme.txt`, update `CHANGELOG.md`,
+tag `vX.Y.Z` and push. CI builds the zip, creates the GitHub release and deploys to
+WordPress.org.
+<!-- tooling:end -->

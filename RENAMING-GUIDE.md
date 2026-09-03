@@ -135,7 +135,7 @@ esc_html__( 'Text', 'my-awesome-plugin' )
 
 ### 7. Configuration Files
 
-#### `phpcs.xml.dist`
+#### `phpcs.xml`
 
 Update the text domain and prefixes:
 
@@ -232,7 +232,7 @@ After renaming, verify everything works:
 ### 1. Run Coding Standards Check
 
 ```bash
-npm run lint:php
+composer run check
 ```
 
 **Must pass with NO errors before committing!**
@@ -240,7 +240,7 @@ npm run lint:php
 If there are errors, fix them with:
 
 ```bash
-npm run lint:php:fix
+vendor/bin/phpcbf --standard=phpcs.xml <plugin-dir>
 ```
 
 Then manually fix remaining issues.
@@ -269,7 +269,7 @@ Should return NO results (except in comments/documentation).
 
 ```bash
 # Start wp-env
-npm run env:start
+npm run start
 
 # Activate plugin via WP-CLI
 npm run env:cli -- wp plugin activate my-awesome-plugin
@@ -313,7 +313,7 @@ Should return NO results.
    - Code uses `my-plugin` or `my_awesome_plugin`
    - **Must be exactly the same everywhere!**
 
-4. **❌ Forgetting phpcs.xml.dist**
+4. **❌ Forgetting phpcs.xml**
    - This causes PHPCS to flag all your prefixes and text domains as errors
    - Always update this file to match your plugin
 
@@ -333,7 +333,7 @@ Minimum files to check/update:
 1. `your-plugin-slug/your-plugin-slug.php` (main file)
 2. `your-plugin-slug/readme.txt`
 3. `your-plugin-slug/uninstall.php`
-4. `phpcs.xml.dist`
+4. `phpcs.xml`
 5. `composer.json`
 6. `package.json`
 7. `.wp-env.json`
@@ -359,7 +359,7 @@ If you encounter issues:
 
 1. Check the automated setup script: `bin/setup-plugin.sh`
 2. Review this guide carefully
-3. Run `npm run lint:php` to catch naming issues
+3. Run `composer run check` to catch naming issues
 4. Search the codebase for old names using grep
 
 Remember: **Consistency is key!** Use the same naming pattern throughout your plugin.

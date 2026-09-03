@@ -1,8 +1,8 @@
 {
-  "name": "plugin-name-project",
+  "name": "__PLUGIN_DIR__-project",
   "version": "1.0.0",
   "private": true,
-  "description": "Development project for the My Awesome WP Boilerplate WordPress plugin",
+  "description": "Development project for the __PLUGIN_NAME__ WordPress plugin",
   "author": "Alan Fuller <alan@fullworks.net>",
   "license": "GPL-2.0-or-later",
   "scripts": {

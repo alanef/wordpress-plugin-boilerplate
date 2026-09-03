@@ -11,9 +11,9 @@ permissions:
   contents: write
 
 env:
-  PLUGIN_DIR: plugin-name
-  PLUGIN_FILE: plugin-name/plugin-name.php
-  SVN_SLUG: plugin-name
+  PLUGIN_DIR: __PLUGIN_DIR__
+  PLUGIN_FILE: __PLUGIN_DIR__/__MAIN_FILE__
+  SVN_SLUG: __SVN_SLUG__
 
 jobs:
   run-checks:
@@ -91,17 +91,17 @@ jobs:
           tag_name: ${{ github.ref }}
           name: Release ${{ steps.get_version.outputs.VERSION }}
           body: |
-            Release of My Awesome WP Boilerplate v${{ steps.get_version.outputs.VERSION }}
+            Release of __PLUGIN_NAME__ v${{ steps.get_version.outputs.VERSION }}
 
             ## Changes
-            See the [change log](https://github.com/alanef/wordpress-plugin-boilerplate/blob/main/CHANGELOG.md) for details.
+            See the [change log](https://github.com/__REPO__/blob/__BRANCH__/CHANGELOG.md) for details.
 
             ## Installation
             Download the attached zip file and upload to your WordPress site.
           draft: false
           prerelease: false
           files: |
-            zipped/plugin-name-${{ steps.get_version.outputs.VERSION }}.zip
+            zipped/__PLUGIN_DIR__-${{ steps.get_version.outputs.VERSION }}.zip
 
       - name: Deploy to WordPress.org
         env:

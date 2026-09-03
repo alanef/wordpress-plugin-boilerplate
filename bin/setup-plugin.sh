@@ -157,7 +157,7 @@ find . -type f \( \
     -name "*.yml" -o \
     -name "*.yml.example" -o \
     -name ".wp-env.json" \
-\) ! -path "./vendor/*" ! -path "./node_modules/*" ! -path "./.git/*" -print0 | while IFS= read -r -d '' file; do
+\) ! -path "./vendor/*" ! -path "./node_modules/*" ! -path "./.git/*" ! -path "./tooling/*" -print0 | while IFS= read -r -d '' file; do
     # Use temporary file for replacements
     temp_file=$(mktemp)
     
@@ -184,19 +184,19 @@ echo "  ✓ Replaced placeholders in files"
 sed -i "s|\"./plugin-name\"|\"./\$PLUGIN_SLUG\"|g" .wp-env.json
 echo "  ✓ Updated .wp-env.json"
 
-# Update phpcs.xml.dist with the correct prefixes for WPCS
-if [ -f "phpcs.xml.dist" ]; then
-    # Update the file path to scan
-    sed -i "s|<file>./plugin-name</file>|<file>./$PLUGIN_SLUG</file>|g" phpcs.xml.dist
-    
-    # Update the text domain
-    sed -i "s|<element value=\"plugin-name\"/>|<element value=\"$PLUGIN_SLUG\"/>|g" phpcs.xml.dist
-    
-    # Update the function/constant prefixes
-    sed -i "s|<element value=\"plugin_name\"/>|<element value=\"${PLUGIN_SLUG_UNDERSCORE}\"/>|g" phpcs.xml.dist
-    sed -i "s|<element value=\"PLUGIN_NAME\"/>|<element value=\"${PLUGIN_CONSTANT}\"/>|g" phpcs.xml.dist
-    
-    echo "  ✓ Updated phpcs.xml.dist with correct prefixes"
+# Update phpcs.xml with the correct prefixes for WPCS
+if [ -f "phpcs.xml" ]; then
+    sed -i "s|<file>./plugin-name</file>|<file>./$PLUGIN_SLUG</file>|g" phpcs.xml
+    sed -i "s|<element value=\"plugin-name\"/>|<element value=\"$PLUGIN_SLUG\"/>|g" phpcs.xml
+    sed -i "s|<element value=\"plugin_name\"/>|<element value=\"${PLUGIN_SLUG_UNDERSCORE}\"/>|g" phpcs.xml
+    sed -i "s|<element value=\"PLUGIN_NAME\"/>|<element value=\"${PLUGIN_CONSTANT}\"/>|g" phpcs.xml
+    echo "  ✓ Updated phpcs.xml with correct prefixes"
+fi
+
+# Render the standard tooling (workflows, tests, docs) for the new slug.
+if [ -x "bin/sync-tooling.sh" ]; then
+    bin/sync-tooling.sh . > /dev/null
+    echo "  ✓ Rendered standard tooling for $PLUGIN_SLUG"
 fi
 
 # Make scripts executable
@@ -211,11 +211,11 @@ echo "  1. Update plugin header information in $PLUGIN_SLUG/$PLUGIN_SLUG.php"
 echo "  2. Update author information in composer.json and package.json"
 echo "  3. Run 'composer install' to install PHP dependencies"
 echo "  4. Run 'npm install' to install Node dependencies"
-echo "  5. Run 'npm run env:start' to start the development environment"
+echo "  5. Run 'npm run start' to start the development environment"
 echo "  6. Update the README.md with your plugin information"
 echo ""
 echo "Optional:"
-echo "  - Configure deployment workflows in .github/workflows/"
+echo "  - Add SVN_USERNAME / SVN_PASSWORD secrets for WordPress.org deployment"
 echo "  - Set up your preferred version control (git init)"
 echo "  - Add your business logic to $PLUGIN_SLUG/$PLUGIN_SLUG.php"
 echo ""

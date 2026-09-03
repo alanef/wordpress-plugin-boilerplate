@@ -1,0 +1,47 @@
+{
+  "name": "fullworks/__PLUGIN_DIR__-project",
+  "description": "Development project for the __PLUGIN_NAME__ WordPress plugin",
+  "type": "project",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "alan",
+      "email": "alan@fullworksplugins.com"
+    }
+  ],
+  "config": {
+    "platform": {
+      "php": "__PHP_PLATFORM__"
+    },
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "3.*",
+    "wp-coding-standards/wpcs": ">=2.3.0",
+    "phpcompatibility/phpcompatibility-wp": "*",
+    "phpunit/phpunit": "^9.5",
+    "yoast/phpunit-polyfills": "^1.1"
+  },
+  "scripts": {
+    "post-update-cmd": [
+      "@plugin-update",
+      "@make-pot"
+    ],
+    "plugin-update": "if [ -f __PLUGIN_DIR__/composer.json ]; then composer update -d __PLUGIN_DIR__; fi",
+    "make-pot": "mkdir -p __PLUGIN_DIR__/languages && wp i18n make-pot ./__PLUGIN_DIR__ ./__PLUGIN_DIR__/languages/__TEXT_DOMAIN__.pot --skip-audit --exclude='vendor,includes/vendor,node_modules'",
+    "build": [
+      "if [ -f __PLUGIN_DIR__/composer.json ]; then composer install -d __PLUGIN_DIR__ --no-dev; fi",
+      "mkdir -p zipped",
+      "wp dist-archive __PLUGIN_DIR__ zipped/__PLUGIN_DIR__-free.zip --force"
+    ],
+    "phpcs": "phpcs __PLUGIN_DIR__ -s --standard=phpcs_sec.xml --ignore=*/vendor/* --extensions=php",
+__COMPAT_SCRIPTS__
+    "check": [
+__COMPAT_CALLS__
+      "@phpcs"
+    ],
+    "test": "npm test"
+  }
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Example Project"
+         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/squizlabs/PHP_CodeSniffer/master/phpcs.xsd">
+
+    <description>WP Security</description>
+
+    <rule ref="WordPress.Security.EscapeOutput">
+    </rule>
+    <rule ref="WordPress.Security.SafeRedirect">
+    </rule>
+    <rule ref="WordPress.Security.NonceVerification">
+    </rule>
+    <rule ref="WordPress.Security.PluginMenuSlug">
+    </rule>
+    <rule ref="Squiz.PHP.Eval">
+    </rule>
+    <rule ref="WordPress.PHP.RestrictedPHPFunctions">
+    </rule>
+    <rule ref="WordPress.Security.ValidatedSanitizedInput">
+    </rule>
+</ruleset>

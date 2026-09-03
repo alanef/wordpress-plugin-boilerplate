@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Managed by wordpress-plugin-boilerplate/tooling - fix there first, then run bin/sync-tooling.sh -->
+<phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd"
+    bootstrap="tests/bootstrap.php"
+    backupGlobals="false"
+    colors="true"
+    convertErrorsToExceptions="true"
+    convertNoticesToExceptions="true"
+    convertWarningsToExceptions="true"
+    >
+    <testsuites>
+        <testsuite name="My Awesome WP Boilerplate Test Suite">
+            <!-- Either naming convention: tests/test-foo.php or tests/**/FooTest.php -->
+            <directory prefix="test-" suffix=".php">./tests</directory>
+            <directory suffix="Test.php">./tests</directory>
+        </testsuite>
+    </testsuites>
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">./plugin-name</directory>
+        </include>
+        <exclude>
+            <directory>./plugin-name/vendor</directory>
+            <directory>./plugin-name/includes/vendor</directory>
+            <directory>./plugin-name/languages</directory>
+        </exclude>
+    </coverage>
+</phpunit>

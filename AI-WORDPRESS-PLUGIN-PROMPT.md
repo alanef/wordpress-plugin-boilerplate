@@ -9,19 +9,19 @@ This document provides comprehensive instructions for AI agents to create WordPr
 ### 1. Coding Standards Check (REQUIRED)
 
 ```bash
-npm run lint:php
+composer run check
 ```
 
 **MUST return with 0 errors and 0 warnings.**
 
 If there are violations:
-1. Run `npm run lint:php:fix` to auto-fix what can be fixed
+1. Run `vendor/bin/phpcbf --standard=phpcs.xml <plugin-dir>` to auto-fix what can be fixed
 2. Manually fix remaining issues
-3. Re-run `npm run lint:php` until it passes completely
+3. Re-run `composer run check` until it passes completely
 
 ### 2. Configuration Verification (REQUIRED)
 
-Verify that `phpcs.xml.dist` has been updated with:
+Verify that `phpcs.xml` has been updated with:
 - Correct text domain matching the plugin slug
 - Proper prefixes (minimum 4 characters) for:
   - lowercase: `myawesomeplugin_`
@@ -55,7 +55,7 @@ Should return NO results.
 
 ```bash
 # Activate the plugin and check for errors
-npm run env:start
+npm run start
 npm run env:cli -- wp plugin activate your-plugin-slug
 npm run env:cli -- wp plugin list
 ```
@@ -447,7 +447,7 @@ delete_option( 'my_plugin_options' );
 
 ### 12. PHPCS Configuration
 
-Create phpcs.xml.dist:
+Create phpcs.xml:
 
 ```xml
 <?xml version="1.0"?>

@@ -36,7 +36,7 @@ require_once "{$_tests_dir}/includes/functions.php";
  * Load the plugin and fire its activation hook.
  */
 function _fullworks_load_plugin_under_test() {
-	$plugin_file = WP_PLUGIN_DIR . '/plugin-name/plugin-name.php';
+	$plugin_file = WP_PLUGIN_DIR . '/__PLUGIN_DIR__/__MAIN_FILE__';
 
 	if ( ! file_exists( $plugin_file ) ) {
 		echo 'Could not find plugin file: ' . $plugin_file . PHP_EOL;

@@ -4,19 +4,19 @@ name: Plugin Check
 on:
   push:
     branches:
-      - main
+      - __BRANCH__
   pull_request:
     branches:
-      - main
+      - __BRANCH__
   workflow_call:
 
 permissions:
   contents: read
 
 env:
-  PLUGIN_DIR: plugin-name
-  PLUGIN_FILE: plugin-name/plugin-name.php
-  VERSION_CONSTANT: "PLUGIN_NAME_VERSION"
+  PLUGIN_DIR: __PLUGIN_DIR__
+  PLUGIN_FILE: __PLUGIN_DIR__/__MAIN_FILE__
+  VERSION_CONSTANT: "__VERSION_CONSTANT__"
 
 jobs:
   checks:
