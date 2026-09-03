@@ -92,6 +92,7 @@ def detect(target, args):
         BRANCH=branch, REPO=repo, REPO_NAME=repo.split("/")[-1], PORT=str(port), TESTS_PORT=str(tests_port),
         SVN_SLUG=args.svn_slug or cfg.get("svn_slug") or plugin_dir,
         PHP_VERSION=args.php_version or cfg.get("php_version") or "8.4",
+        PHPUNIT_EXCLUDES=cfg.get("phpunit_exclude", []),
     ), wpenv
 
 
@@ -100,10 +101,13 @@ def render(text, v):
     scripts = "\n".join('    "compat:%s": "phpcs %s -s --standard=PHPCompatibilityWP --ignore=*/vendor/* --extensions=php --runtime-set testVersion %s",' % (p, v["PLUGIN_DIR"], p) for p in compat)
     calls = "\n".join('      "@compat:%s",' % p for p in compat)
     text = text.replace("__COMPAT_SCRIPTS__", scripts).replace("__COMPAT_CALLS__", calls)
+    excludes = "\n".join("            <exclude>./tests/%s</exclude>" % e for e in v.get("PHPUNIT_EXCLUDES", []))
+    text = text.replace("__PHPUNIT_EXCLUDES__\n", excludes + "\n" if excludes else "")
     note = " and `%s` in the main file" % v["VERSION_CONSTANT"] if v["VERSION_CONSTANT"] else ""
     text = text.replace("__VERSION_CONSTANT_NOTE__", note)
     for k, val in v.items():
-        text = text.replace("__%s__" % k, val)
+        if isinstance(val, str):
+            text = text.replace("__%s__" % k, val)
     return text
 
 

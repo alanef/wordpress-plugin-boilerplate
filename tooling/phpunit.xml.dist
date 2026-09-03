@@ -15,6 +15,7 @@
             <!-- Either naming convention: tests/test-foo.php or tests/**/FooTest.php -->
             <directory prefix="test-" suffix=".php">./tests</directory>
             <directory suffix="Test.php">./tests</directory>
+__PHPUNIT_EXCLUDES__
         </testsuite>
     </testsuites>
     <coverage processUncoveredFiles="true">

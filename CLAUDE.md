@@ -50,7 +50,8 @@ Per-repo values are detected (plugin dir, main file, default branch, `*_VERSION`
 existing wp-env ports) and can be pinned in `.tooling.json` at the target root:
 
 ```json
-{"svn_slug": "wp-org-slug", "port": 8710, "tests_port": 8711, "php_version": "8.4"}
+{"svn_slug": "wp-org-slug", "port": 8710, "tests_port": 8711, "php_version": "8.4",
+ "phpunit_exclude": ["helper-script.php"]}
 ```
 
 ## Commands (identical in every plugin repository)

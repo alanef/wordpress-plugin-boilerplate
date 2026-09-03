@@ -3,8 +3,8 @@
   "plugins": [
     "./plugin-name"
   ],
-  "port": 8780,
-  "testsPort": 8781,
+  "port": 8810,
+  "testsPort": 8811,
   "config": {
     "WP_DEBUG": true,
     "WP_DEBUG_LOG": true,
