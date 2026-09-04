@@ -162,6 +162,12 @@ def main():
     elif not tests and not os.path.exists(smoke):
         write(smoke, R("tests/test-plugin-load.php")); log("added smoke test tests/test-plugin-load.php")
 
+    # Plugin production dependencies resolve fresh on every build: no plugin-dir lock file.
+    plock = P(v["PLUGIN_DIR"], "composer.lock")
+    if os.path.exists(plock):
+        subprocess.run(["git", "rm", "-q", "--cached", "--ignore-unmatch", plock], cwd=t)
+        os.remove(plock); log("removed plugin composer.lock (plugin deps resolve fresh on build)")
+
     # Plugin .distignore (union), root .gitignore (canonical + kept extras).
     di = P(v["PLUGIN_DIR"], ".distignore")
     canon = R("distignore").splitlines()

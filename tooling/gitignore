@@ -9,6 +9,7 @@ tmp-build/
 node_modules/
 /vendor/
 /__PLUGIN_DIR__/vendor/
+/__PLUGIN_DIR__/composer.lock
 /__PLUGIN_DIR__/includes/vendor/
 .phpunit.result.cache
 *.phpunit.result.cache

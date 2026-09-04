@@ -29,6 +29,7 @@ plugin**. Each plugin repository's `CLAUDE.md` links here. Two rules follow from
     ├── readme.txt                     # Stable tag must equal the header Version
     ├── .distignore
     └── composer.json (optional)       # production dependencies -> <plugin-dir>/vendor or includes/vendor
+                                       #   (no composer.lock: plugin deps resolve fresh on every build)
 ```
 
 ## Managed files (rendered from `tooling/`)
