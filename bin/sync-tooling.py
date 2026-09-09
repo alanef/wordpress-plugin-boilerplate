@@ -102,6 +102,11 @@ def render(text, v):
     scripts = "\n".join('    "compat:%s": "phpcs %s -s --standard=PHPCompatibilityWP --ignore=*/vendor/* --extensions=php --runtime-set testVersion %s",' % (p, v["PLUGIN_DIR"], p) for p in compat)
     calls = "\n".join('      "@compat:%s",' % p for p in compat)
     text = text.replace("__COMPAT_SCRIPTS__", scripts).replace("__COMPAT_CALLS__", calls)
+    # CI runs on the default branch and on develop, because work lands on develop
+    # and a check that only fires on the default branch reports nothing until merge.
+    # Deduped, so a repo whose default already IS develop gets one entry, not two.
+    branches = [v["BRANCH"]] + [b for b in ("develop",) if b != v["BRANCH"]]
+    text = text.replace("__BRANCH_LIST__", "\n".join("      - %s" % b for b in branches))
     excludes = "\n".join("            <exclude>./tests/%s</exclude>" % e for e in v.get("PHPUNIT_EXCLUDES", []))
     text = text.replace("__PHPUNIT_EXCLUDES__\n", excludes + "\n" if excludes else "")
     note = " and `%s` in the main file" % v["VERSION_CONSTANT"] if v["VERSION_CONSTANT"] else ""

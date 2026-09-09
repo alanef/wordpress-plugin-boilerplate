@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Plugin Check now runs on `develop` as well as the repository's default branch. Work lands on `develop`, so a check wired only to the default branch reported nothing until merge time, which is exactly when it is least useful. The generated workflow takes a `__BRANCH_LIST__` block instead of a single `__BRANCH__`, deduped so a repo whose default already is `develop` gets one entry rather than two.
+
 ### Fixed
 
 - Plugin Check now lists the built zip's contents and deletes any `.wp-env.override.json` before starting wp-env. A committed override with a `plugins` entry mounts the source directory over the build mapping, so Plugin Check inspected the repository (reporting `.distignore` as a hidden file) instead of the zip.
