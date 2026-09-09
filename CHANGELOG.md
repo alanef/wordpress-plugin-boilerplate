@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `wp-env start` in the PHPUnit job now retries up to three times, stopping between attempts so a half-started environment does not poison the next try, and fails loudly with an annotation if all three fail. It flakes intermittently on container and network timing, and a flake previously read as a test failure. The fix existed in the boilerplate's own CI but had never reached the template, so no plugin had it.
 - Plugin Check now runs on `develop` as well as the repository's default branch. Work lands on `develop`, so a check wired only to the default branch reported nothing until merge time, which is exactly when it is least useful. The generated workflow takes a `__BRANCH_LIST__` block instead of a single `__BRANCH__`, deduped so a repo whose default already is `develop` gets one entry rather than two.
 
 ### Fixed

@@ -166,7 +166,18 @@ jobs:
         run: npm ci
 
       - name: Start wp-env
-        run: npx wp-env start
+        # wp-env start flakes intermittently in CI on container and network
+        # timing. Retry, stopping between attempts so a half-started
+        # environment does not poison the next try.
+        run: |
+          started=0
+          for i in 1 2 3; do
+            if npx wp-env start; then started=1; break; fi
+            echo "wp-env start attempt $i failed; retrying..."
+            npx wp-env stop >/dev/null 2>&1 || true
+            sleep 5
+          done
+          [ "$started" = "1" ] || { echo "::error::wp-env failed to start after 3 attempts"; exit 1; }
 
       - name: Run tests
         run: npm test
