@@ -26,6 +26,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Where a release goes is a property of the plugin, not of the workflow,
+      # so it is read from the plugin's own readme.txt and the same CI serves
+      # every repo. Omitting the header is the safe default: GitHub only,
+      # nothing published anywhere public by accident. A value that is present
+      # but unrecognised is a typo, not a choice, so it stops the release
+      # rather than silently falling back to that default.
+      - name: Resolve deploy targets
+        id: deploy
+        run: |
+          README="$PLUGIN_DIR/readme.txt"
+          TYPE=""
+          if [ -f "$README" ]; then
+            TYPE=$(grep -m1 -iE "^[[:space:]]*Type:" "$README" \
+              | sed -E 's/^[[:space:]]*[Tt][Yy][Pp][Ee]:[[:space:]]*//' \
+              | tr -d ' \r' | tr '[:upper:]' '[:lower:]')
+          fi
+          case "$TYPE" in
+            "")       WPORG=false; FREEMIUS=false; LABEL="GitHub only (no Type: header)" ;;
+            free)     WPORG=true;  FREEMIUS=false; LABEL="GitHub + WordPress.org" ;;
+            freemium) WPORG=true;  FREEMIUS=true;  LABEL="GitHub + WordPress.org + Freemius" ;;
+            premium)  WPORG=false; FREEMIUS=true;  LABEL="GitHub + Freemius" ;;
+            *)
+              echo "::error::Unrecognised \"Type: $TYPE\" in $README. Use free, freemium or premium, or omit the header entirely for GitHub-only."
+              exit 1
+              ;;
+          esac
+          echo "WPORG=$WPORG" >> $GITHUB_OUTPUT
+          echo "FREEMIUS=$FREEMIUS" >> $GITHUB_OUTPUT
+          echo "Type: ${TYPE:-(absent)}"
+          echo "Deploy targets: $LABEL"
+          echo "**Deploy targets:** $LABEL" >> $GITHUB_STEP_SUMMARY
+
       - name: Get required PHP version
         id: php_version
         run: |
@@ -107,6 +139,7 @@ jobs:
             zipped/__PLUGIN_DIR__-${{ steps.get_version.outputs.VERSION }}.zip
 
       - name: Deploy to WordPress.org
+        if: steps.deploy.outputs.WPORG == 'true'
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}

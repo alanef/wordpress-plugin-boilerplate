@@ -38,6 +38,26 @@ composer run build                # zipped/__PLUGIN_DIR__-free.zip via wp dist-a
 3. `composer run check && npm test`.
 4. Commit, tag `vX.Y.Z`, push branch and tag.
 5. The `Build Release` workflow re-runs the checks, creates the GitHub release with the zip
-   attached and deploys trunk + tag to WordPress.org SVN (needs `SVN_USERNAME` and
-   `SVN_PASSWORD` repository secrets).
+   attached, then deploys to whatever the plugin's `Type:` calls for.
+
+## Where a release goes
+
+`Build Release` reads a `Type:` header from the plugin's `readme.txt` and deploys
+accordingly. Every plugin gets a GitHub release; `Type:` only decides what else:
+
+| `readme.txt` | GitHub | WordPress.org | Freemius |
+|---|---|---|---|
+| *(no `Type:` header)* | yes | | |
+| `Type: free` | yes | yes | |
+| `Type: freemium` | yes | yes | yes |
+| `Type: premium` | yes | | yes |
+
+Omitting the header is the safe default -- a plugin is never published anywhere
+public by accident. A header that is present but unrecognised **fails the
+release**, because that is a typo rather than a choice, and silently falling back
+to GitHub-only is how a plugin quietly stops reaching WordPress.org for months.
+The resolved targets are echoed in the job log and the run summary.
+
+WordPress.org deploys need the `SVN_USERNAME` and `SVN_PASSWORD` repository
+secrets; the step fails loudly if they are missing or the SVN tag already exists.
 <!-- tooling:end -->

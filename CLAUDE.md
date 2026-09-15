@@ -13,7 +13,7 @@ plugin**. Each plugin repository's `CLAUDE.md` links here. Two rules follow from
 ```
 <repo>/                                # root = development tooling, never shipped
 ├── .github/workflows/checks.yml       # push / PR: PHPCS, version consistency, build, Plugin Check, PHPUnit
-├── .github/workflows/release.yml      # tag vX.Y.Z: checks, GitHub release + zip, WordPress.org SVN deploy
+├── .github/workflows/release.yml      # tag vX.Y.Z: checks, GitHub release + zip, deploys per readme Type:
 ├── tests/bootstrap.php                # loads the plugin into the WordPress core test library
 ├── tests/test-*.php | **/*Test.php    # PHPUnit tests (WP_UnitTestCase available)
 ├── phpunit.xml.dist                   # PHPUnit config (root)
@@ -82,9 +82,20 @@ composer run make-pot              # regenerate languages/<text-domain>.pot
 **release.yml** (tags `vX.Y.Z` or `X.Y.Z`)
 
 - Re-runs checks, builds, verifies the tag equals the plugin version and is not a prerelease,
-  creates the GitHub release with `zipped/<plugin-dir>-X.Y.Z.zip` attached, then deploys trunk
-  and `tags/X.Y.Z` to WordPress.org SVN. Needs repository secrets `SVN_USERNAME` and
-  `SVN_PASSWORD`; the step fails loudly if they are missing or the SVN tag already exists.
+  creates the GitHub release with `zipped/<plugin-dir>-X.Y.Z.zip` attached, then deploys to
+  the targets the plugin asks for.
+
+  **Deploy targets come from the plugin, not the workflow.** `Build Release` reads a `Type:`
+  header from `<plugin-dir>/readme.txt` so one CI serves every repo and no plugin needs a
+  hand-edited workflow: no header means GitHub only, `free` adds WordPress.org, `freemium`
+  adds WordPress.org and Freemius, `premium` is GitHub and Freemius. WordPress.org tolerates
+  non-standard readme headers, so `Type:` is safe to ship. An unrecognised value fails the
+  release rather than falling back, since a typo that silently skips WordPress.org is not
+  discovered until someone asks why the update never landed. The resolved targets are printed
+  in the job log and the run summary.
+
+  WordPress.org deploys need repository secrets `SVN_USERNAME` and `SVN_PASSWORD`; the step
+  fails loudly if they are missing or the SVN tag already exists.
 
 Known traps already handled in the templates (do not regress them):
 
