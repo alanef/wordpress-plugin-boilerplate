@@ -1,0 +1,23 @@
+# Ignore development stuff
+/.wordpress-org
+/.git
+/.github
+/.gitkeep
+/node_modules
+vendor/bin
+tests
+bin
+build
+.distignore
+.gitignore
+
+
+composer.json
+composer.lock
+package.json
+package-lock.json
+phpcs.xml.dist
+phpcs_sec.xml
+.eslintrc.json
+.eslintignore
+.wp-env.json
