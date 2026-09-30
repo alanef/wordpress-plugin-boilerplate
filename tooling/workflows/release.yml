@@ -170,6 +170,18 @@ jobs:
           svn status | grep '^!' | sed 's/^! *//' | xargs -r -I{} svn delete "{}" || true
 
           cd ..
+
+          # wordpress.org listing assets (banners, icon, screenshots, Playground
+          # blueprint) live in .wordpress-org/ at project root and go to SVN
+          # assets/, beside trunk and tags, in the same commit. They are never
+          # in the plugin zip. README.md there is developer notes, not listing.
+          if [ -d "$GITHUB_WORKSPACE/.wordpress-org" ]; then
+            mkdir -p assets
+            rsync -a --delete --exclude='.svn' --exclude='README.md' "$GITHUB_WORKSPACE/.wordpress-org/" assets/
+            svn add --force assets --auto-props --parents --depth infinity -q || true
+            svn status assets | grep '^!' | sed 's/^! *//' | xargs -r -I{} svn delete "{}" || true
+          fi
+
           svn cp trunk "tags/$VERSION"
           svn commit -m "Release version $VERSION" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache
 

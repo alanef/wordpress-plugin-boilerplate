@@ -97,6 +97,12 @@ composer run make-pot              # regenerate languages/<text-domain>.pot
   WordPress.org deploys need repository secrets `SVN_USERNAME` and `SVN_PASSWORD`; the step
   fails loudly if they are missing or the SVN tag already exists.
 
+  **Listing assets** (banners, icon, screenshots, `blueprints/blueprint.json`) live in
+  `.wordpress-org/` at project root, never inside the plugin directory, so they cannot reach
+  the zip. The WordPress.org deploy rsyncs that folder (minus its `README.md`) to SVN
+  `assets/` in the same commit as `trunk` and the tag, so a listing change ships with the
+  next release.
+
 Known traps already handled in the templates (do not regress them):
 
 - WP-CLI's bundled Composer 2.2 rejects the runner token that setup-php persists in
