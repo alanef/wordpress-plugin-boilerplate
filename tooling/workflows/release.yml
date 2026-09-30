@@ -21,10 +21,10 @@ jobs:
 
   build-release:
     needs: run-checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Where a release goes is a property of the plugin, not of the workflow,
       # so it is read from the plugin's own readme.txt and the same CI serves
@@ -121,7 +121,7 @@ jobs:
           echo "Tag version matches plugin version: $PLUGIN_VERSION"
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref }}
           name: Release ${{ steps.get_version.outputs.VERSION }}

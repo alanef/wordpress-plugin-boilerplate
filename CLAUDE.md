@@ -111,6 +111,13 @@ Known traps already handled in the templates (do not regress them):
 - `softprops/action-gh-release` does not support `path#name`; the zip is copied to its
   versioned name before upload.
 - Plugin Check runs on the *built* zip so `.distignore` mistakes surface in CI.
+- Jobs run on `ubuntu-24.04`, not `ubuntu-latest`, so a GitHub image change (Ubuntu 26 from
+  19 October 2026) cannot silently change every plugin's CI at once. Moving image is a
+  deliberate tooling change here, rolled out like any other.
+- Actions are on their Node 24 majors (`checkout@v7`, `cache@v6`, `setup-node@v7`,
+  `action-gh-release@v3`; `setup-php@v2` floats to a Node 24 build). A Node 20
+  deprecation annotation that remains comes from inside `wordpress/plugin-check-action`,
+  which is a composite action outside our control.
 
 ## Tests
 
