@@ -73,6 +73,19 @@ jobs:
           php-version: ${{ steps.php_version.outputs.PHP_VERSION }}
           tools: composer:v2, wp-cli
 
+      - name: Ensure WP-CLI
+        # setup-php intermittently reports "Could not setup wp-cli" and carries on, so the
+        # build later dies with "wp: command not found". Fetch the phar directly, with
+        # retries, whenever setup-php did not provide it.
+        run: |
+          if command -v wp > /dev/null; then wp --version; exit 0; fi
+          echo "::warning::setup-php did not install WP-CLI - downloading it directly"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o /tmp/wp-cli.phar \
+            https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          php /tmp/wp-cli.phar --version
+          sudo install -m 0755 /tmp/wp-cli.phar /usr/local/bin/wp
+          wp --version
+
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
