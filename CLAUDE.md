@@ -46,6 +46,7 @@ plugin**. Each plugin repository's `CLAUDE.md` links here. Two rules follow from
 | `phpcs.xml`, `phpcs_sec.xml` | `tooling/` | added if missing (`phpcs.xml.dist` renamed) |
 | `CLAUDE.md`, `README.md` | `tooling/*.block` | block between `<!-- tooling:start -->` / `<!-- tooling:end -->` replaced; rest untouched |
 | `CHANGELOG.md` | generated | baseline created if missing |
+| `<plugin>/includes/class-github-updater.php`, `tests/test-github-updater.php`, `Update URI:` header, guarded `require` block at the end of the main file | `tooling/github-updater.php`, `tooling/tests/` | GitHub-only plugins (no `Type:` in readme.txt): overwritten, header set from the git remote. Any `Type:`: all removed |
 
 Per-repo values are detected (plugin dir, main file, default branch, `*_VERSION` constant,
 existing wp-env ports) and can be pinned in `.tooling.json` at the target root:
@@ -118,6 +119,31 @@ Known traps already handled in the templates (do not regress them):
   `action-gh-release@v3`; `setup-php@v2` floats to a Node 24 build). A Node 20
   deprecation annotation that remains comes from inside `wordpress/plugin-check-action`,
   which is a composite action outside our control.
+
+## GitHub self-update (GitHub-only plugins)
+
+A plugin with no `Type:` header in `readme.txt` is released only on GitHub, so it updates
+itself from its releases through the normal WordPress update screens. The sync renders a
+per-plugin copy of `tooling/github-updater.php` (namespace `<PREFIX>\Updater`, from the
+`*_VERSION` constant, so copies in different plugins never collide), sets
+`Update URI: https://github.com/<owner>/<repo>` from the git remote, appends a guarded
+`require` to the main file, and excludes Plugin Check's `plugin_updater` check in
+checks.yml. Setting `Type: free|freemium|premium` and re-syncing removes all of it:
+WordPress.org forbids off-site updates and Freemius updates premium plugins itself.
+
+How it works: core (5.8+) skips WordPress.org for a plugin whose `Update URI` host is
+`github.com` and fires `update_plugins_github.com` instead. The updater reads the
+`Location` of `github.com/<repo>/releases/latest` (HEAD, no redirects, 5 s timeout; no
+GitHub API, token or rate limit), builds the package URL
+`releases/download/<tag>/<plugin-dir>-<version>.zip` (what release.yml always attaches),
+and caches the lookup in a site transient for 6 h, or 1 h after a failure. It also answers
+"View details", installs into the folder the plugin already lives in (a `-main` source
+install does not get a second copy), and "Check again" on Dashboard → Updates refreshes it.
+
+Why a synced copy rather than a Composer library (like `free_plugin_lib`): a shared class
+loaded by several plugins resolves to whichever plugin loads first, so one stale copy would
+run the update channel for all of them; the sync is already the fix-once, roll-out-everywhere
+path; and the sync can add or remove the updater per plugin from `Type:`.
 
 ## Tests
 

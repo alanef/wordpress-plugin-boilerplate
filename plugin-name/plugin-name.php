@@ -6,6 +6,7 @@
  * Version:           1.0.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
+ * Update URI:        https://github.com/alanef/wordpress-plugin-boilerplate
  * Author:            Alan Fuller
  * Author URI:        https://github.com/alanef
  * License:           GPL v2 or later
@@ -83,3 +84,9 @@ function plugin_name_enqueue_scripts() {
 	// wp_enqueue_style( 'plugin-name', PLUGIN_NAME_URL . 'assets/css/frontend.css', array(), PLUGIN_NAME_VERSION ).
 }
 add_action( 'wp_enqueue_scripts', 'plugin_name_enqueue_scripts' );
+
+// Self-update from GitHub releases. Managed by wordpress-plugin-boilerplate/tooling: present only
+// while readme.txt has no Type: header (GitHub-only release).
+if ( file_exists( __DIR__ . '/includes/class-github-updater.php' ) ) {
+	require_once __DIR__ . '/includes/class-github-updater.php';
+}

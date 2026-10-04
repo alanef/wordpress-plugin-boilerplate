@@ -81,6 +81,12 @@ def detect(target, args):
     remote = sh("git remote get-url origin", target)
     rm = re.search(r"github\.com[:/]([^/]+/[^/.]+)", remote)
     repo = rm.group(1) if rm else "alanef/" + os.path.basename(target)
+    # Release type, read exactly as release.yml does: no Type: header means GitHub only.
+    readme = read(os.path.join(pdir, "readme.txt")) if os.path.exists(os.path.join(pdir, "readme.txt")) else ""
+    tm = re.search(r"^[ \t]*Type:[ \t]*(.*)$", readme, re.M | re.I)
+    release_type = tm.group(1).strip().lower() if tm else ""
+    vconst = m.group(1) if m else ""
+    prefix = re.sub(r"_?VERSION$", "", vconst) or "".join(w.capitalize() for w in re.split(r"[^a-zA-Z0-9]+", plugin_dir) if w)
     wpenv = {}
     if os.path.exists(os.path.join(target, ".wp-env.json")):
         wpenv = json.load(open(os.path.join(target, ".wp-env.json")))
@@ -94,6 +100,8 @@ def detect(target, args):
         SVN_SLUG=args.svn_slug or cfg.get("svn_slug") or plugin_dir,
         PHP_VERSION=args.php_version or cfg.get("php_version") or "8.4",
         PHPUNIT_EXCLUDES=cfg.get("phpunit_exclude", []),
+        RELEASE_TYPE=release_type, UPDATER_NS=prefix + "\\Updater",
+        PLUGIN_CHECK_EXCLUDES="plugin_updater" if release_type == "" else "",
     ), wpenv
 
 
@@ -117,6 +125,46 @@ def render(text, v):
     return text
 
 
+UPDATER_FILE = "includes/class-github-updater.php"
+UPDATER_BLOCK = (
+    "\n// Self-update from GitHub releases. Managed by wordpress-plugin-boilerplate/tooling: present only\n"
+    "// while readme.txt has no Type: header (GitHub-only release).\n"
+    "if ( file_exists( __DIR__ . '/%s' ) ) {\n"
+    "\trequire_once __DIR__ . '/%s';\n"
+    "}\n" % (UPDATER_FILE, UPDATER_FILE))
+UPDATER_BLOCK_RE = re.compile(r"\n// Self-update from GitHub releases\. Managed by wordpress-plugin-boilerplate/tooling.*?\n}\n", re.S)
+UPDATE_URI_RE = re.compile(r"^([ \t]*\*[ \t]*)Update URI:[ \t]*.*\n", re.M)
+
+
+def sync_updater(t, v):
+    """GitHub-only plugins update themselves from GitHub releases; typed ones must not."""
+    P = lambda *a: os.path.join(t, *a)
+    main = P(v["PLUGIN_DIR"], v["MAIN_FILE"])
+    php = read(main)
+    managed = [P(v["PLUGIN_DIR"], UPDATER_FILE), P("tests", "test-github-updater.php")]
+    php = UPDATER_BLOCK_RE.sub("", php)
+    if v["RELEASE_TYPE"]:
+        for f in managed:
+            if os.path.exists(f):
+                os.remove(f); log("removed GitHub updater file", os.path.relpath(f, t), "(Type: %s)" % v["RELEASE_TYPE"])
+        php, n = UPDATE_URI_RE.subn("", php)
+        if n:
+            log("removed Update URI header (Type: %s releases do not self-update)" % v["RELEASE_TYPE"])
+    else:
+        write(managed[0], render(read(os.path.join(TOOLING, "github-updater.php")), v))
+        write(managed[1], render(read(os.path.join(TOOLING, "tests", "test-github-updater.php")), v))
+        uri = "Update URI:        https://github.com/%s\n" % v["REPO"]
+        if UPDATE_URI_RE.search(php):
+            php = UPDATE_URI_RE.sub(lambda mm: mm.group(1) + uri, php, count=1)
+        else:
+            php = re.sub(r"^([ \t]*\*[ \t]*)(Requires PHP:.*\n)", lambda mm: mm.group(1) + mm.group(2) + mm.group(1) + uri, php, count=1, flags=re.M)
+            if "Update URI:" not in php:
+                sys.exit("Could not add an Update URI header: no 'Requires PHP:' line in %s" % main)
+        php = php.rstrip("\n") + "\n" + UPDATER_BLOCK
+        log("GitHub updater: %s, Update URI https://github.com/%s" % (UPDATER_FILE, v["REPO"]))
+    write(main, php)
+
+
 def replace_block(existing, block, prepend):
     pat = re.compile(r"<!-- tooling:start.*?<!-- tooling:end -->\n?", re.S)
     if existing and pat.search(existing):
@@ -135,7 +183,7 @@ def main():
     t = os.path.abspath(args.target)
     v, wpenv = detect(t, args)
     print("Syncing tooling into %s" % t)
-    for k in ("PLUGIN_DIR", "MAIN_FILE", "PLUGIN_NAME", "BRANCH", "REPO", "VERSION_CONSTANT", "PHP_MIN", "PORT", "TESTS_PORT", "SVN_SLUG"):
+    for k in ("PLUGIN_DIR", "MAIN_FILE", "PLUGIN_NAME", "BRANCH", "REPO", "VERSION_CONSTANT", "PHP_MIN", "PORT", "TESTS_PORT", "SVN_SLUG", "RELEASE_TYPE"):
         log("%-16s %s" % (k, v[k]))
     P = lambda *a: os.path.join(t, *a)
     R = lambda rel: render(read(os.path.join(TOOLING, rel)), v)
@@ -147,6 +195,8 @@ def main():
         p = f if os.path.isabs(f) else P(".github", "workflows", f)
         if os.path.exists(p):
             os.remove(p); log("removed legacy", os.path.relpath(p, t))
+
+    sync_updater(t, v)
 
     # Test runner and PHPUnit config.
     write(P("run-tests.sh"), R("run-tests.sh"), 0o755)

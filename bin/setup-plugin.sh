@@ -167,7 +167,7 @@ find . -type f \( \
         -e "s/MyAwesomeWPBoilerplate/$PLUGIN_NAMESPACE/g" \
         -e "s/my-awesome-wp-boilerplate/$PLUGIN_SLUG/g" \
         -e "s/my_awesome_wp_boilerplate/$PLUGIN_SLUG_UNDERSCORE/g" \
-        -e "s/Plugin Name/$PLUGIN_NAME/g" \
+        -e "s/Plugin Name\([^:]\)/$PLUGIN_NAME\1/g" \
         -e "s/PluginName/$PLUGIN_NAMESPACE/g" \
         -e "s/plugin-name/$PLUGIN_SLUG/g" \
         -e "s/plugin_name/$PLUGIN_SLUG_UNDERSCORE/g" \

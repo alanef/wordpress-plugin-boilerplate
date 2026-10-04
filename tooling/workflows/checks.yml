@@ -135,6 +135,8 @@ jobs:
         uses: wordpress/plugin-check-action@v1
         with:
           build-dir: './tmp-build/${{ env.PLUGIN_DIR }}'
+          # plugin_updater is excluded only for GitHub-only plugins, which update from GitHub releases.
+          exclude-checks: '__PLUGIN_CHECK_EXCLUDES__'
 
   tests:
     name: PHPUnit (wp-env)

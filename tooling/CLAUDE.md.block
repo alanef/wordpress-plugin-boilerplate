@@ -58,6 +58,10 @@ release**, because that is a typo rather than a choice, and silently falling bac
 to GitHub-only is how a plugin quietly stops reaching WordPress.org for months.
 The resolved targets are echoed in the job log and the run summary.
 
+With no `Type:` header the plugin also **updates itself from its GitHub releases** (managed
+`includes/class-github-updater.php` and `Update URI:` header, both added by the sync). Adding a
+`Type:` and re-syncing removes them, since WordPress.org forbids off-site updates.
+
 WordPress.org deploys need the `SVN_USERNAME` and `SVN_PASSWORD` repository
 secrets; the step fails loudly if they are missing or the SVN tag already exists.
 <!-- tooling:end -->
