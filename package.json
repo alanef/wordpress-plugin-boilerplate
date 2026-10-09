@@ -1,6 +1,6 @@
 {
   "name": "plugin-name-project",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Development project for the My Awesome WP Boilerplate WordPress plugin",
   "author": "Alan Fuller <alan@fullworks.net>",

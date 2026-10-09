@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-09
+
 ### Added
 
 - GitHub-only plugins (no `Type:` in readme.txt) now update themselves from their GitHub releases through the normal WordPress update screens, so sites no longer need manual zip uploads or a Git Updater plugin (which cannot work here: it expects assets named after the repository, not the plugin folder). The sync renders a per-plugin `includes/class-github-updater.php`, sets the `Update URI` header from the git remote, adds a guarded `require` to the main file and excludes Plugin Check's `plugin_updater` check; adding a `Type:` removes all of it, because WordPress.org forbids off-site updates. It reads the latest release from the github.com redirect (no API, token or rate limit), caches it (6 h, 1 h after a failure, 5 s timeout) so an unreachable GitHub never slows the admin, keeps an update in the folder the plugin is installed in, and ships with a generated PHPUnit test. A synced copy was chosen over a Composer library because a shared class loaded by several plugins resolves to whichever loads first.
