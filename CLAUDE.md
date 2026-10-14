@@ -75,7 +75,8 @@ explicitly accepts a stale page, and the final report then says `CHANGELOG PAGE 
 Stable tag, package.json (root and plugin dir, where it has a version), `.pot` Project-Id-Version and renames
 `= Unreleased =` in changelog.txt, then reads every one back and fails on a mismatch (refuses
 `-` prerelease versions; X.Y only where the plugin already uses it); `check-dependencies.sh`
-resolves the plugin's composer deps fresh and blocks on any advisory, warning only for root
+resolves the plugin's composer deps fresh (a committed lock is audited as-is; an untracked
+local one is set aside, since it may be stale) and blocks on any advisory, warning only for root
 composer and npm; `run-tests-and-mark.sh` runs checks.yml's gates locally (PHPUnit needs
 wp-env running, or `--no-wp-env` records it as skipped) and writes `TESTS_PASSED.md` with the
 commit. Run it after the release commit. `/tk-deploy live` then follows the rendered
@@ -101,6 +102,9 @@ purpose (QPP's release.yml deploys to Freemius and syncs the free repo), so noth
 touched. A `run-tests-and-mark.sh` without the `Managed by wordpress-plugin-boilerplate/tooling`
 marker is kept, since those plugins' test gates are their own; if there is none, the generic one
 is rendered with a warning to check its commands against the plugin's composer scripts.
+A Freemius plugin (any `fs_dynamic_init(` in the plugin dir) with no `pipeline` in
+`.tooling.json` is refused outright: pin `freemius-two-tag` or `single-tag` first, so a
+missing pin can never overwrite its own workflows with a full sync.
 
 ## Commands (identical in every plugin repository)
 

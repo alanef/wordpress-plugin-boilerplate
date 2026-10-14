@@ -24,14 +24,20 @@ mkdir -p "$OUT"
 run() { ( cd "$1" && shift && "$@" ) 2>&1 | grep -v 'legacy composer-installer'; return "${PIPESTATUS[0]}"; }
 
 if [ -f "$P/composer.json" ]; then
-	made_lock=0
+	# Only a committed lock is what ships. An untracked local one may be stale, so set it
+	# aside and resolve fresh, as CI does; it is put back afterwards.
+	made_lock=0; held_lock=""
+	if [ -f "$P/composer.lock" ] && ! git -C "$ROOT" ls-files --error-unmatch "$P/composer.lock" >/dev/null 2>&1; then
+		held_lock=$(mktemp); mv "$P/composer.lock" "$held_lock"
+		trap '[ -n "$held_lock" ] && mv -f "$held_lock" "$P/composer.lock"' EXIT
+	fi
 	[ -f "$P/composer.lock" ] || made_lock=1
 	if [ "$made_lock" = 1 ]; then
 		# Composer 2.9+ refuses to resolve versions with advisories; let it, so the audit
 		# below names the advisory instead of reporting an unexplained resolve failure.
 		resolve=$(COMPOSER_NO_BLOCKING=1 COMPOSER_NO_SECURITY_BLOCKING=1 run "$P" composer update --no-dev --no-install --no-scripts --no-plugins --no-progress --no-interaction); resolve_rc=$?
 	else
-		resolve="using existing __PLUGIN_DIR__/composer.lock"; resolve_rc=0
+		resolve="using committed __PLUGIN_DIR__/composer.lock"; resolve_rc=0
 	fi
 	if [ "$resolve_rc" = 0 ]; then
 		prod=$(run "$P" composer audit --locked --no-dev --format=plain); prod_rc=$?
@@ -41,6 +47,7 @@ if [ -f "$P/composer.json" ]; then
 $resolve"; prod_rc=1
 	fi
 	[ "$made_lock" = 1 ] && rm -f "$P/composer.lock"
+	if [ -n "$held_lock" ]; then mv -f "$held_lock" "$P/composer.lock"; held_lock=""; trap - EXIT; fi
 	prod_result=$( [ "$prod_rc" = 0 ] && echo clean || echo ADVISORIES )
 else
 	prod="__PLUGIN_DIR__/composer.json absent: the plugin ships no Composer dependencies."; prod_rc=0; prod_result="none shipped"
@@ -58,7 +65,8 @@ npm_out=""; npm_rc=0
 for d in "$ROOT" "$P"; do
 	if [ -f "$d/package-lock.json" ]; then
 		out=$(run "$d" npm audit --omit=optional); rc=$?
-		npm_out+="### ${d#"$ROOT"}/ (exit $rc)"$'\n'"$(echo "$out" | tail -40)"$'\n'
+		rel=${d#"$ROOT"}; rel=${rel#/}
+		npm_out+="### ${rel:-repository root} (exit $rc)"$'\n'"$(echo "$out" | tail -40)"$'\n'
 		[ "$rc" = 0 ] || npm_rc=$rc
 	fi
 done

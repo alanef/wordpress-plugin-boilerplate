@@ -102,6 +102,15 @@ def detect(target, args):
         tag_prefix = "v" if not tags or tags[0].startswith("v") else ""
     # Which release pipeline /tk-deploy live follows. Only a .tooling.json pin selects the
     # non-standard ones; otherwise the readme Type: header decides, as in release.yml.
+    # A Freemius plugin's pipeline can't be told from readme.txt (QPP releases in two tags
+    # with its own release.yml), and a full sync would overwrite its workflows. Make it pinned.
+    if not cfg.get("pipeline"):
+        for root, dirs, files in os.walk(pdir):
+            dirs[:] = [d for d in dirs if d not in ("vendor", "node_modules", "freemius", "freemius-sdk")]
+            if any(f.endswith(".php") and "fs_dynamic_init(" in read(os.path.join(root, f)) for f in files):
+                sys.exit("%s is a Freemius plugin (fs_dynamic_init) with no pipeline pinned. Add .tooling.json "
+                         "with \"pipeline\": \"freemius-two-tag\" (plus free_repo, freemius_id, changelog_url) or "
+                         "\"single-tag\", then re-run." % plugin_dir)
     pipeline = cfg.get("pipeline") or ("github" if release_type == "" else "single-tag")
     if pipeline not in ("github", "single-tag", "freemius-two-tag", "own-site"):
         sys.exit("Unknown pipeline %r in .tooling.json (use freemius-two-tag or own-site, or omit it)." % pipeline)
