@@ -1,0 +1,8 @@
+= 1.0.0 =
+* Initial release
+* WordPress coding standards compliance
+* Security checks integration
+* Automated build processes
+* Translation file generation
+* GitHub Actions CI/CD workflows
+* Modern PHP development setup

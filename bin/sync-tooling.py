@@ -9,7 +9,9 @@ first, then re-run this script against each plugin repository. Values are detect
 the target (plugin directory, main file, default branch, version constant, wp-env ports)
 and can be pinned in an optional .tooling.json at the target root:
 
-    {"svn_slug": "...", "port": 8710, "tests_port": 8711, "php_version": "8.4", "plugin_dir": "..."}
+    {"svn_slug": "...", "port": 8710, "tests_port": 8711, "php_version": "8.4", "plugin_dir": "...",
+     "tag_prefix": "v", "youtrack_project": "KEY", "pipeline": "freemius-two-tag" | "own-site",
+     "free_repo": "alanef/...", "freemius_id": "1234", "changelog_url": "https://...", "hosting": "site-slug"}
 """
 import argparse, glob, json, os, re, shutil, subprocess, sys
 
@@ -92,6 +94,20 @@ def detect(target, args):
         wpenv = json.load(open(os.path.join(target, ".wp-env.json")))
     port = args.port or cfg.get("port") or wpenv.get("port") or wpenv.get("env", {}).get("development", {}).get("port") or 8888
     tests_port = args.tests_port or cfg.get("tests_port") or wpenv.get("testsPort") or wpenv.get("env", {}).get("tests", {}).get("port") or (port + 1)
+    # Tag style: keep whatever the repo already does. The newest version-like tag decides
+    # (release.yml accepts both); a repo with no tags gets the documented vX.Y.Z.
+    tag_prefix = cfg.get("tag_prefix")
+    if tag_prefix is None:
+        tags = [t for t in sh("git tag -l --sort=-creatordate", target).splitlines() if re.match(r"^v?\d+(\.\d+)+$", t)]
+        tag_prefix = "v" if not tags or tags[0].startswith("v") else ""
+    # Which release pipeline /tk-deploy live follows. Only a .tooling.json pin selects the
+    # non-standard ones; otherwise the readme Type: header decides, as in release.yml.
+    pipeline = cfg.get("pipeline") or ("github" if release_type == "" else "single-tag")
+    if pipeline not in ("github", "single-tag", "freemius-two-tag", "own-site"):
+        sys.exit("Unknown pipeline %r in .tooling.json (use freemius-two-tag or own-site, or omit it)." % pipeline)
+    missing = [k for k in {"freemius-two-tag": ("free_repo", "freemius_id", "changelog_url"), "own-site": ("hosting",)}.get(pipeline, ()) if not cfg.get(k)]
+    if missing:
+        sys.exit("pipeline %s needs %s in .tooling.json" % (pipeline, ", ".join(missing)))
     return dict(
         PLUGIN_DIR=plugin_dir, MAIN_FILE=main_file, PLUGIN_NAME=header(main_php, "Plugin Name") or plugin_dir,
         TEXT_DOMAIN=header(main_php, "Text Domain") or plugin_dir, PHP_MIN=php_min,
@@ -102,6 +118,10 @@ def detect(target, args):
         PHPUNIT_EXCLUDES=cfg.get("phpunit_exclude", []),
         RELEASE_TYPE=release_type, UPDATER_NS=prefix + "\\Updater",
         PLUGIN_CHECK_EXCLUDES="plugin_updater" if release_type == "" else "",
+        VERSION=header(main_php, "Version"), TAG_PREFIX=tag_prefix, PIPELINE=pipeline,
+        YOUTRACK_PROJECT=str(cfg.get("youtrack_project", "")), FREE_REPO=str(cfg.get("free_repo", "")),
+        FREEMIUS_ID=str(cfg.get("freemius_id", "")), CHANGELOG_URL=str(cfg.get("changelog_url", "")),
+        HOSTING=str(cfg.get("hosting", "")),
     ), wpenv
 
 
@@ -165,6 +185,155 @@ def sync_updater(t, v):
     write(main, php)
 
 
+# ---------------------------------------------------------------------------
+# Changelog: exactly one per plugin, <plugin-dir>/changelog.txt, wp.org style.
+#
+#   = Unreleased =            work in progress; bump-version.sh renames it at release
+#   * Fixed: ...              typed bullets: Added / Changed / Deprecated / Removed / Fixed / Security
+#   = 1.2.0 =
+#
+# It ships in the zip and is what update-changelog.sh publishes to the KB. The Keep a
+# Changelog root CHANGELOG.md earlier syncs created is merged into it, then deleted.
+# ---------------------------------------------------------------------------
+CL_HEADING = re.compile(r"^=[ \t]+(.+?)[ \t]+=[ \t]*$")      # "= 1.2.0 =", not "== Changelog =="
+MD_HEADING = re.compile(r"^##[ \t]+\[?([^\]\s]+)\]?")       # "## [1.2.0] - 2026-01-01", "## [Unreleased]"
+MD_PLACEHOLDER = re.compile(r"Baseline\. Earlier history is in")
+
+
+def cl_parse(text):
+    """Split changelog.txt into (prelude lines, [(heading, [lines])]) keeping order and text."""
+    prelude, sections = [], []
+    for line in text.splitlines():
+        m = CL_HEADING.match(line)
+        if m and not line.startswith("=="):
+            sections.append([m.group(1).strip(), []])
+        elif sections:
+            sections[-1][1].append(line)
+        else:
+            prelude.append(line)
+    return prelude, sections
+
+
+def cl_render(prelude, sections):
+    out = list(prelude)
+    for head, lines in sections:
+        body = list(lines)
+        while body and not body[-1].strip():
+            body.pop()
+        out += ["= %s =" % head] + body + [""]
+    return "\n".join(out).rstrip("\n") + "\n"
+
+
+def md_entries(text):
+    """Real entries from a Keep a Changelog file: [(heading, [bullet lines])], placeholders skipped."""
+    out, head, kind = [], None, None
+    for line in text.splitlines():
+        m = MD_HEADING.match(line)
+        if m and not line.startswith("###"):
+            head = "Unreleased" if m.group(1).lower() == "unreleased" else m.group(1)
+            kind = None
+            out.append([head, []])
+            continue
+        if head is None:
+            continue
+        k = re.match(r"^###[ \t]+(\w+)", line)
+        if k:
+            kind = k.group(1).capitalize()
+            continue
+        b = re.match(r"^[ \t]*[-*][ \t]+(.*)$", line)
+        if b and not line.startswith((" ", "\t")):
+            item = b.group(1).strip()
+            if MD_PLACEHOLDER.search(item):
+                continue
+            out[-1][1].append("* %s: %s" % (kind, item) if kind else "* %s" % item)
+        elif line.startswith((" ", "\t")) and line.strip() and out[-1][1]:
+            out[-1][1][-1] += " " + line.strip()      # wrapped continuation of the previous bullet
+    return [(h, items) for h, items in out if items]
+
+
+def version_key(head):
+    nums = re.findall(r"\d+", head.split()[0]) if head else []
+    return tuple(int(n) for n in nums[:4]) if nums else (10 ** 9,)   # Unreleased sorts above everything
+
+
+def sync_changelog(t, v, boilerplate=False):
+    """Make <plugin-dir>/changelog.txt the one changelog. Idempotent; logs what it did."""
+    P = lambda *a: os.path.join(t, *a)
+    cl = P(v["PLUGIN_DIR"], "changelog.txt")
+    md = P("CHANGELOG.md")
+    if os.path.exists(cl):
+        prelude, sections = cl_parse(read(cl))
+        created = False
+    else:
+        readme = read(P(v["PLUGIN_DIR"], "readme.txt")) if os.path.exists(P(v["PLUGIN_DIR"], "readme.txt")) else ""
+        m = re.search(r"^==[ \t]*Changelog[ \t]*==[ \t]*\n(.*?)(?=^==[ \t]*[^=\n]+==[ \t]*$|\Z)", readme, re.M | re.S | re.I)
+        prelude, sections = cl_parse(m.group(1)) if m else ([], [])
+        sections = [s for s in sections if re.match(r"^\d+(\.\d+)+", s[0])]
+        if sections:
+            log("changelog: created %s/changelog.txt from %d readme.txt entries" % (v["PLUGIN_DIR"], len(sections)))
+        else:
+            sections = [[v["VERSION"] or "1.0.0", ["* Baseline."]]]
+            log("changelog: created %s/changelog.txt baseline = %s =" % (v["PLUGIN_DIR"], sections[0][0]))
+        prelude, created = [], True
+    # The boilerplate's own CHANGELOG.md is the boilerplate project's history, not plugin-name's.
+    merged, md_removed = 0, False
+    if not boilerplate and os.path.exists(md):
+        for head, items in md_entries(read(md)):
+            existing = next((s for s in sections if s[0].split()[0].lower() == head.lower()), None)
+            if existing is None:
+                existing = [head, []]
+                idx = next((i for i, s in enumerate(sections) if version_key(s[0]) < version_key(head)), len(sections))
+                sections.insert(idx, existing)
+            have = {l.strip() for l in existing[1]}
+            new = [i for i in items if i.strip() not in have]
+            if new:
+                body = existing[1]
+                while body and not body[-1].strip():
+                    body.pop()
+                body += new
+                merged += len(new)
+        os.remove(md); md_removed = True
+        subprocess.run(["git", "rm", "-q", "--cached", "--ignore-unmatch", "CHANGELOG.md"], cwd=t)
+        log("changelog: merged %d CHANGELOG.md entr%s into %s/changelog.txt and removed CHANGELOG.md"
+            % (merged, "y" if merged == 1 else "ies", v["PLUGIN_DIR"]))
+    if created or merged:
+        write(cl, cl_render(prelude, sections))
+    elif not md_removed:
+        log("changelog: %s/changelog.txt already canonical" % v["PLUGIN_DIR"])
+
+
+# ---------------------------------------------------------------------------
+# Release hooks (/tk-release) and the /tk-deploy live command.
+# ---------------------------------------------------------------------------
+DEPLOY_TEMPLATES = {"github": "deploy-live.github.md", "single-tag": "deploy-live.free.md",
+                    "freemius-two-tag": "deploy-live.freemius-two-tag.md", "own-site": "deploy-live.own-site.md"}
+COND_RE = re.compile(r"^<!-- if (\w+) -->\n(.*?)^<!-- endif -->\n", re.S | re.M)
+
+
+def conditionals(text, v):
+    """Keep <!-- if wporg|freemius|nowporg --> ... <!-- endif --> blocks that apply to this plugin's Type:."""
+    flags = {"wporg": v["RELEASE_TYPE"] in ("free", "freemium"),
+             "freemius": v["RELEASE_TYPE"] in ("freemium", "premium")}
+    flags["nowporg"] = not flags["wporg"]
+    return COND_RE.sub(lambda m: m.group(2) if flags[m.group(1)] else "", text)
+
+
+def sync_release(t, v):
+    P = lambda *a: os.path.join(t, *a)
+    for f in ("bump-version.sh", "check-dependencies.sh", "run-tests-and-mark.sh"):
+        write(P("scripts", "release", f), render(read(os.path.join(TOOLING, "scripts", "release", f)), v), 0o755)
+    tpl = DEPLOY_TEMPLATES[v["PIPELINE"]]
+    cmd = lambda f: read(os.path.join(TOOLING, "claude", "commands", f))
+    text = re.sub(r"^<!-- include (\w+) -->\n", lambda m: cmd("_%s.md" % m.group(1)), cmd(tpl), flags=re.M)
+    text = render(conditionals(text, v), v)
+    left = sorted(set(re.findall(r"__[A-Z][A-Z0-9_]+__", text)))
+    if left:
+        sys.exit("unrendered placeholders in %s: %s" % (tpl, left))
+    write(P(".claude", "commands", "deploy-live.md"), text)
+    log("release: scripts/release/{bump-version,check-dependencies,run-tests-and-mark}.sh, "
+        ".claude/commands/deploy-live.md from %s (tags %sX.Y.Z)" % (tpl, v["TAG_PREFIX"]))
+
+
 def replace_block(existing, block, prepend):
     pat = re.compile(r"<!-- tooling:start.*?<!-- tooling:end -->\n?", re.S)
     if existing and pat.search(existing):
@@ -183,7 +352,7 @@ def main():
     t = os.path.abspath(args.target)
     v, wpenv = detect(t, args)
     print("Syncing tooling into %s" % t)
-    for k in ("PLUGIN_DIR", "MAIN_FILE", "PLUGIN_NAME", "BRANCH", "REPO", "VERSION_CONSTANT", "PHP_MIN", "PORT", "TESTS_PORT", "SVN_SLUG", "RELEASE_TYPE"):
+    for k in ("PLUGIN_DIR", "MAIN_FILE", "PLUGIN_NAME", "BRANCH", "REPO", "VERSION_CONSTANT", "PHP_MIN", "PORT", "TESTS_PORT", "SVN_SLUG", "RELEASE_TYPE", "PIPELINE", "TAG_PREFIX"):
         log("%-16s %s" % (k, v[k]))
     P = lambda *a: os.path.join(t, *a)
     R = lambda rel: render(read(os.path.join(TOOLING, rel)), v)
@@ -227,6 +396,9 @@ def main():
     di = P(v["PLUGIN_DIR"], ".distignore")
     canon = R("distignore").splitlines()
     extra = [l for l in (read(di).splitlines() if os.path.exists(di) else []) if l.strip() and l not in canon]
+    if any(l.strip().lstrip("/") == "changelog.txt" for l in extra):
+        log("%s/.distignore: dropped changelog.txt (the changelog ships in the zip)" % v["PLUGIN_DIR"])
+        extra = [l for l in extra if l.strip().lstrip("/") != "changelog.txt"]
     write(di, "\n".join(canon + extra) + "\n")
     gi = P(".gitignore")
     canon = R("gitignore").splitlines()
@@ -294,23 +466,20 @@ def main():
     ordered.update({k: env[k] for k in env if k not in ordered})
     write(P(".wp-env.json"), json.dumps(ordered, indent=2) + "\n")
 
-    # Docs (the boilerplate itself carries the master CLAUDE.md / README, so skip it there).
+    # The boilerplate itself carries the master CLAUDE.md / README / CHANGELOG.md of the
+    # boilerplate project, and is not released with the plugin deploy commands, so only the
+    # sample plugin's changelog.txt is handled there.
     if os.path.isdir(P("tooling")):
-        print("Done (boilerplate itself: docs untouched).")
+        sync_changelog(t, v, boilerplate=True)
+        print("Done (boilerplate itself: docs, CHANGELOG.md and release commands untouched).")
         return
+    sync_changelog(t, v)
+    sync_release(t, v)
     cl = P("CLAUDE.md")
     write(cl, replace_block(read(cl) if os.path.exists(cl) else "", R("CLAUDE.md.block"), prepend=True))
     rd = P("README.md")
     existing = read(rd) if os.path.exists(rd) else "# %s\n" % v["PLUGIN_NAME"]
     write(rd, replace_block(existing, R("README.md.block"), prepend=False))
-    ch = P("CHANGELOG.md")
-    if not os.path.exists(ch):
-        ver = header(read(P(v["PLUGIN_DIR"], v["MAIN_FILE"])), "Version")
-        write(ch, "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n"
-                  "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),\n"
-                  "and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n\n"
-                  "## [Unreleased]\n\n## [%s]\n\n- Baseline. Earlier history is in `%s/readme.txt`.\n" % (ver, v["PLUGIN_DIR"]))
-        log("created CHANGELOG.md baseline")
     print("Done. Next: composer update && npm install && composer run check && npm test")
 
 

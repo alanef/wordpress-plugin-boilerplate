@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Release hooks for `/tk-release`, rendered into every plugin as `scripts/release/`: `bump-version.sh X.Y.Z` sets the header, version constant, Stable tag, package.json, `.pot` and changelog heading, then reads every one back and fails on any mismatch, because a substitution that matches nothing fails silently (`--check` reads back only); `check-dependencies.sh` resolves the shipped Composer dependencies fresh and blocks on any advisory, warning only for tooling and npm trees; `run-tests-and-mark.sh` runs checks.yml's gates locally and writes `TESTS_PASSED.md`, naming the commit, only when all pass. Generalised from Quick PayPal Payments, so every plugin releases the same way instead of by hand.
+- `/tk-deploy live` commands, rendered as `.claude/commands/deploy-live.md` from one template per pipeline: GitHub-only, single-tag (`Type: free`/`freemium`/`premium`), the two-tag Freemius pipeline (`"pipeline": "freemius-two-tag"`) and own-site plugins (`"pipeline": "own-site"`, which builds and hands off to HOSTING DevOps rather than deploying). All share one set of preconditions (level with origin, clean tree, versions agree, tag absent, fresh test evidence, CI green), require explicit confirmation before tagging, never retry a tag push, and finish with the KB changelog and YouTrack.
+- New `.tooling.json` pins: `tag_prefix` (otherwise taken from the newest existing tag), `youtrack_project`, `pipeline`, `free_repo`, `freemius_id`, `changelog_url`, `hosting`.
+
+### Changed
+
+- Each plugin now has exactly one changelog, `<plugin-dir>/changelog.txt` in wp.org style with typed bullets under `= Unreleased =`. It ships in the zip and is what the KB publisher reads. The sync no longer creates a root `CHANGELOG.md`: it creates `changelog.txt` if missing (from the readme's changelog entries, or a baseline), merges any real entries from an existing root `CHANGELOG.md` into it, and deletes that file. Two changelogs had started to diverge, and the root one never reached users.
+- The GitHub release body links to `<plugin-dir>/changelog.txt` instead of the root `CHANGELOG.md`.
+
 ## [1.1.0] - 2026-10-09
 
 ### Added
