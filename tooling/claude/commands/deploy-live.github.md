@@ -41,7 +41,9 @@ gh release view $TAG -R __REPO__ --json assets,isLatest -q '.isLatest, .assets[]
 Sites pick the update up on their next check: the updater caches the latest release for
 6 hours (1 hour after a failure). "Check again" on Dashboard -> Updates refreshes it at once.
 
-<!-- include after -->
+<!-- include changelog -->
+
+<!-- include youtrack -->
 
 ## Finish
 

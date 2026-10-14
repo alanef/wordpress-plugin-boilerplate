@@ -10,7 +10,7 @@
 #   plugin header Version:                } CI fails the build if these differ,
 #   version constant ($CONST, if any)     } and release.yml if the tag differs
 #   readme.txt Stable tag                 }
-#   package.json version                    root, and the plugin dir if it has one (not CI checked)
+#   package.json version                    root and plugin dir, where the file has a "version" key
 #   languages/__TEXT_DOMAIN__.pot           Project-Id-Version, when the .pot carries a version
 #   changelog.txt                           "= Unreleased =" becomes "= X.Y.Z =", or the top
 #                                           heading must already be X.Y.Z
@@ -46,6 +46,8 @@ fi
 # First match only, flexible whitespace. Q is the version quoted for a perl regex.
 Q="${V//./\\.}"
 set_first() { perl -0pi -e "$1" "$2"; }
+# A package.json without a "version" key (a private dev project) carries no version to keep in step.
+has_version() { [ -f "$1" ] && grep -qE '"version"[[:space:]]*:' "$1"; }
 
 if [ "$CHECK" = 0 ]; then
 	set_first "s/^([ \t]*\*?[ \t]*Version:[ \t]*)\S+/\${1}$V/m" "$MAIN"
@@ -54,7 +56,7 @@ if [ "$CHECK" = 0 ]; then
 	fi
 	set_first "s/^(Stable tag:[ \t]*)\S+/\${1}$V/m" "$README"
 	for pj in "$ROOT/package.json" "$P/package.json"; do
-		[ -f "$pj" ] && set_first "s/(\"version\"\s*:\s*\")[^\"]*\"/\${1}$V\"/" "$pj"
+		has_version "$pj" && set_first "s/(\"version\"\s*:\s*\")[^\"]*\"/\${1}$V\"/" "$pj"
 	done
 	if [ -n "$POT" ]; then
 		set_first "s/(\"Project-Id-Version: [^\"\\\\]*? )[0-9][0-9A-Za-z.+-]*(\\\\n\")/\${1}$V\${2}/" "$POT"
@@ -78,7 +80,7 @@ if [ -n "$CONST" ]; then
 	found[constant]="$(grep -m1 -oP "define\(\s*['\"]$CONST['\"]\s*,\s*['\"]\K[^'\"]*" "$MAIN" || true)"
 fi
 for pj in "$ROOT/package.json" "$P/package.json"; do
-	[ -f "$pj" ] && found["package_json:${pj#"$ROOT"/}"]="$(grep -m1 -oP '"version"\s*:\s*"\K[^"]*' "$pj" || echo 'no version key')"
+	has_version "$pj" && found["package_json:${pj#"$ROOT"/}"]="$(grep -m1 -oP '"version"\s*:\s*"\K[^"]*' "$pj")"
 done
 if [ -n "$POT" ]; then
 	pot_v="$(grep -m1 -oP '"Project-Id-Version: [^"\\]*? \K[0-9][0-9A-Za-z.+-]*(?=\\n")' "$POT" || true)"

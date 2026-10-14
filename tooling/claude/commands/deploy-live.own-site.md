@@ -45,6 +45,8 @@ Only when the user reports that HOSTING DevOps has deployed `$V` and it is verif
 2. Watch it: `gh run list -R __REPO__ --workflow release.yml --limit 5`, then
    `gh run watch <id> -R __REPO__ --exit-status`.
 
-<!-- include after -->
+<!-- include changelog -->
+
+<!-- include youtrack -->
 
 Then report: hand-off contents, tag, release.yml run, changelog result, YouTrack updates.

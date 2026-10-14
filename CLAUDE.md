@@ -50,7 +50,7 @@ plugin**. Each plugin repository's `CLAUDE.md` links here. Two rules follow from
 | `phpcs.xml`, `phpcs_sec.xml` | `tooling/` | added if missing (`phpcs.xml.dist` renamed) |
 | `CLAUDE.md`, `README.md` | `tooling/*.block` | block between `<!-- tooling:start -->` / `<!-- tooling:end -->` replaced; rest untouched |
 | `<plugin>/changelog.txt` | generated / merged | created if missing (from readme.txt `== Changelog ==` version entries, else a `* Baseline.` entry); a root `CHANGELOG.md` is merged in (`## [x.y.z]` -> `= x.y.z =`, `### Fixed` + `- item` -> `* Fixed: item`, Unreleased kept, baseline placeholders dropped) and deleted. Idempotent |
-| `scripts/release/{bump-version,check-dependencies,run-tests-and-mark}.sh` | `tooling/scripts/release/` | overwritten, executable |
+| `scripts/release/{bump-version,check-dependencies,run-tests-and-mark}.sh` | `tooling/scripts/release/` | overwritten, executable (release-only: an unmanaged `run-tests-and-mark.sh` is kept) |
 | `.claude/commands/deploy-live.md` | `tooling/claude/commands/deploy-live.<pipeline>.md` | overwritten; template chosen from the pipeline (below) |
 | `<plugin>/includes/class-github-updater.php`, `tests/test-github-updater.php`, `Update URI:` header, guarded `require` block at the end of the main file | `tooling/github-updater.php`, `tooling/tests/` | GitHub-only plugins (no `Type:` in readme.txt): overwritten, header set from the git remote. Any `Type:`: all removed |
 
@@ -68,7 +68,7 @@ existing wp-env ports) and can be pinned in `.tooling.json` at the target root:
 ## Release pipelines (`/tk-release`, `/tk-deploy live`)
 
 `/tk-release X.Y.Z` runs the synced hooks: `bump-version.sh` sets header, version constant,
-Stable tag, package.json (root and plugin dir), `.pot` Project-Id-Version and renames
+Stable tag, package.json (root and plugin dir, where it has a version), `.pot` Project-Id-Version and renames
 `= Unreleased =` in changelog.txt, then reads every one back and fails on a mismatch (refuses
 `-` prerelease versions; X.Y only where the plugin already uses it); `check-dependencies.sh`
 resolves the plugin's composer deps fresh and blocks on any advisory, warning only for root
@@ -88,7 +88,15 @@ Every template checks the same preconditions (`_preconditions.md`: level with or
 `bump-version.sh --check`, tag absent both styles, evidence present and fresh, checks.yml
 green on HEAD), asks for explicit confirmation before tagging, stops at the first failure,
 never retries a tag push, and ends with the KB changelog (`update-changelog.sh`, only with
-`.env.wordpress`) and YouTrack (`_after.md`).
+`.env.wordpress`, `_changelog.md`) and YouTrack (`_youtrack.md`).
+
+**Release-only sync.** The `freemius-two-tag` and `own-site` pipelines (or `--release-only`)
+sync only `<plugin>/changelog.txt`, `scripts/release/bump-version.sh`, `check-dependencies.sh`
+and `.claude/commands/deploy-live.md`. Their workflows, composer/test setup and docs differ on
+purpose (QPP's release.yml deploys to Freemius and syncs the free repo), so nothing else is
+touched. A `run-tests-and-mark.sh` without the `Managed by wordpress-plugin-boilerplate/tooling`
+marker is kept, since those plugins' test gates are their own; if there is none, the generic one
+is rendered with a warning to check its commands against the plugin's composer scripts.
 
 ## Commands (identical in every plugin repository)
 

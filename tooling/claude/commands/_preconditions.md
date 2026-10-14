@@ -35,7 +35,7 @@ All must hold, otherwise stop:
   Otherwise re-run `$P/scripts/release/run-tests-and-mark.sh $V`. If the marker shows
   PHPUnit `SKIPPED`, say so to the user when asking for confirmation.
 - `$P/.sdlc/releases/$V/DEPENDENCY_AUDIT.md` exists (from `scripts/release/check-dependencies.sh`).
-- The latest Plugin Check run on `__BRANCH__` is for HEAD and succeeded:
+- The latest `checks.yml` run on `__BRANCH__` is for HEAD and succeeded:
   `gh run list -R __REPO__ --workflow checks.yml --branch __BRANCH__ --limit 1 --json headSha,status,conclusion`
   shows `headSha` = HEAD, `completed`, `success`.
 

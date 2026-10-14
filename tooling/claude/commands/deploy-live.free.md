@@ -52,7 +52,9 @@ single-tag workflow has **no Freemius deploy step yet**, so nothing was uploaded
 That is a manual step below; do not treat its absence from the run as a failure.
 <!-- endif -->
 
-<!-- include after -->
+<!-- include changelog -->
+
+<!-- include youtrack -->
 
 ## Tell the user what is still manual
 

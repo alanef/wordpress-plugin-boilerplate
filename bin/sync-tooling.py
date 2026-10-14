@@ -318,10 +318,28 @@ def conditionals(text, v):
     return COND_RE.sub(lambda m: m.group(2) if flags[m.group(1)] else "", text)
 
 
-def sync_release(t, v):
+MANAGED_MARK = "Managed by wordpress-plugin-boilerplate/tooling"
+RELEASE_ONLY_PIPELINES = ("freemius-two-tag", "own-site")
+RELEASE_ONLY_SKIPPED = (".github/workflows/*", "run-tests.sh", "phpunit.xml.dist", "tests/", "composer.json",
+                        "package.json", ".wp-env.json", ".gitignore", "<plugin>/.distignore", "phpcs*.xml",
+                        "GitHub updater", "CLAUDE.md / README.md blocks")
+
+
+def sync_release(t, v, release_only=False):
     P = lambda *a: os.path.join(t, *a)
     for f in ("bump-version.sh", "check-dependencies.sh", "run-tests-and-mark.sh"):
-        write(P("scripts", "release", f), render(read(os.path.join(TOOLING, "scripts", "release", f)), v), 0o755)
+        dest = P("scripts", "release", f)
+        if f == "run-tests-and-mark.sh" and release_only:
+            # These pipelines keep their own test setup, so their test gates are their own too
+            # (QPP: composer test:unit, test:integration, compat:*). Never replace a hand-written one.
+            if os.path.exists(dest) and MANAGED_MARK not in read(dest):
+                log("release-only: kept project-specific scripts/release/run-tests-and-mark.sh")
+                continue
+            if not os.path.exists(dest):
+                log("WARNING release-only: rendered the generic scripts/release/run-tests-and-mark.sh. It runs the "
+                    "boilerplate's gates (composer run check, composer run build, npm test); check them against "
+                    "this plugin's own composer scripts before relying on its marker.")
+        write(dest, render(read(os.path.join(TOOLING, "scripts", "release", f)), v), 0o755)
     tpl = DEPLOY_TEMPLATES[v["PIPELINE"]]
     cmd = lambda f: read(os.path.join(TOOLING, "claude", "commands", f))
     text = re.sub(r"^<!-- include (\w+) -->\n", lambda m: cmd("_%s.md" % m.group(1)), cmd(tpl), flags=re.M)
@@ -330,8 +348,7 @@ def sync_release(t, v):
     if left:
         sys.exit("unrendered placeholders in %s: %s" % (tpl, left))
     write(P(".claude", "commands", "deploy-live.md"), text)
-    log("release: scripts/release/{bump-version,check-dependencies,run-tests-and-mark}.sh, "
-        ".claude/commands/deploy-live.md from %s (tags %sX.Y.Z)" % (tpl, v["TAG_PREFIX"]))
+    log("release: scripts/release/ hooks, .claude/commands/deploy-live.md from %s (tags %sX.Y.Z)" % (tpl, v["TAG_PREFIX"]))
 
 
 def replace_block(existing, block, prepend):
@@ -348,6 +365,8 @@ def main():
     ap.add_argument("target")
     ap.add_argument("--svn-slug"); ap.add_argument("--port", type=int); ap.add_argument("--tests-port", type=int)
     ap.add_argument("--php-version"); ap.add_argument("--plugin-dir")
+    ap.add_argument("--release-only", action="store_true",
+                    help="only the changelog, scripts/release/ and deploy-live.md (implied by the freemius-two-tag and own-site pipelines)")
     args = ap.parse_args()
     t = os.path.abspath(args.target)
     v, wpenv = detect(t, args)
@@ -356,6 +375,20 @@ def main():
         log("%-16s %s" % (k, v[k]))
     P = lambda *a: os.path.join(t, *a)
     R = lambda rel: render(read(os.path.join(TOOLING, rel)), v)
+
+    # Release-only: plugins on their own pipeline (QPP's Freemius two-tag release.yml, own-site
+    # deploys) have workflows, composer/test setup and docs that differ on purpose. Syncing
+    # those would break them, so only the release standard is applied.
+    if args.release_only or v["PIPELINE"] in RELEASE_ONLY_PIPELINES:
+        if os.path.isdir(P("tooling")):
+            sys.exit("--release-only is for plugin repositories, not the boilerplate itself")
+        log("RELEASE-ONLY sync (%s): changelog.txt, scripts/release/, .claude/commands/deploy-live.md"
+            % ("--release-only" if args.release_only else "pipeline " + v["PIPELINE"]))
+        sync_changelog(t, v)
+        sync_release(t, v, release_only=True)
+        log("release-only: skipped " + ", ".join(RELEASE_ONLY_SKIPPED))
+        print("Done (release-only).")
+        return
 
     # Workflows.
     for f in ("checks.yml", "release.yml"):

@@ -18,9 +18,13 @@ GIT_TERMINAL_PROMPT=0 git clone -q git@github.com:__FREE_REPO__.git $F
 
 <!-- include preconditions -->
 
-Also, on the free repo: tag `$TAG` must not exist
-(`GIT_TERMINAL_PROMPT=0 git -C $F ls-remote --tags origin "refs/tags/$V" "refs/tags/v$V"` empty).
-The confirmation you ask for covers both tags; say so when asking.
+Also, for this pipeline:
+
+- If `origin/develop` exists it must be at HEAD too (the release is develop fast-forwarded
+  to `__BRANCH__`): `git -C $P rev-parse origin/develop` = HEAD.
+- On the free repo, tag `$TAG` must not exist
+  (`GIT_TERMINAL_PROMPT=0 git -C $F ls-remote --tags origin "refs/tags/$V" "refs/tags/v$V"` empty).
+- The confirmation you ask for covers both tags; say so when asking.
 
 ## Tag and push
 
@@ -72,10 +76,12 @@ curl -s https://plugins.svn.wordpress.org/__SVN_SLUG__/tags/ | grep -c ">$V/<"  
 The wordpress.org API will NOT show `$V` yet if release confirmation is on. That is
 expected; see the manual steps.
 
-<!-- include after -->
+<!-- include changelog -->
 
 Then confirm the KB page shows the version:
 `curl -s __CHANGELOG_URL__ | grep -c "Version $V"`.
+
+<!-- include youtrack -->
 
 Remove the temp clone: `rm -rf "$(dirname $F)"`.
 
