@@ -48,4 +48,4 @@ Sites pick the update up on their next check: the updater caches the latest rele
 ## Finish
 
 Report: tag, release.yml run, the asset confirmed, changelog result, YouTrack updates, and
-that sites will see `$V` within 6 hours.
+that sites will see `$V` within 6 hours. Put any `CHANGELOG PAGE NOT UPDATED` line on its own, first.

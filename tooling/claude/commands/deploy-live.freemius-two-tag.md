@@ -78,9 +78,6 @@ expected; see the manual steps.
 
 <!-- include changelog -->
 
-Then confirm the KB page shows the version:
-`curl -s __CHANGELOG_URL__ | grep -c "Version $V"`.
-
 <!-- include youtrack -->
 
 Remove the temp clone: `rm -rf "$(dirname $F)"`.
@@ -97,4 +94,4 @@ Always end with these, explicitly:
    get the update before that.
 3. Any server side follow-ups recorded in the release notes.
 
-Then report: both tags, release.yml run, SVN run, changelog result, YouTrack updates.
+Then report: both tags, release.yml run, SVN run, changelog result, YouTrack updates. Put any `CHANGELOG PAGE NOT UPDATED` line on its own, first.

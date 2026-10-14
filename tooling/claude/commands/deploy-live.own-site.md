@@ -49,4 +49,4 @@ Only when the user reports that HOSTING DevOps has deployed `$V` and it is verif
 
 <!-- include youtrack -->
 
-Then report: hand-off contents, tag, release.yml run, changelog result, YouTrack updates.
+Then report: hand-off contents, tag, release.yml run, changelog result, YouTrack updates. Put any `CHANGELOG PAGE NOT UPDATED` line on its own, first.

@@ -10,6 +10,8 @@ TAG=__TAG_PREFIX__$V          # this repo's tag style (pin "tag_prefix" in .tool
 PREV=$(git -C $P tag -l | grep -E '^v?[0-9]+(\.[0-9]+)+$' | awk '{t=$0; sub(/^v/,"",t); print t" "$0}' | sort -V | tail -1 | cut -d' ' -f2)
 KEY=$(grep -oP '^YOUTRACK_PROJECT=["'\'']?\K[A-Za-z0-9_]+' $P/.env.youtrack 2>/dev/null)
 KEY=${KEY:-__YOUTRACK_PROJECT__}   # empty: YouTrack step is skipped with a note
+KB="__CHANGELOG_URL__"             # KB changelog page: the changelog_url pin, else the readme's link
+KB=${KB:-$(grep -m1 -oE 'https://fullworksplugins\.com/docs/[^ )"<>]*change-log[^ )"<>]*' $P/__PLUGIN_DIR__/readme.txt)}
 ```
 
 Check `git -C $P remote get-url origin` names `__REPO__` before going on.
@@ -35,6 +37,15 @@ All must hold, otherwise stop:
   Otherwise re-run `$P/scripts/release/run-tests-and-mark.sh $V`. If the marker shows
   PHPUnit `SKIPPED`, say so to the user when asking for confirmation.
 - `$P/.sdlc/releases/$V/DEPENDENCY_AUDIT.md` exists (from `scripts/release/check-dependencies.sh`).
+- **KB changelog page.** If `$KB` is empty the plugin has no KB changelog page; note
+  "no KB changelog page" and go on. If `$KB` is set, `$P/.env.wordpress` must exist and set
+  both `WP_POST_ID` and `CHANGELOG_FILE`:
+  `grep -qE '^(export )?WP_POST_ID=.+' $P/.env.wordpress && grep -qE '^(export )?CHANGELOG_FILE=.+' $P/.env.wordpress`.
+  If not, **stop** and tell the user, on its own line:
+  `CHANGELOG PAGE WILL NOT BE UPDATED: no .env.wordpress (page: $KB)` (or name the missing
+  key). The file is gitignored and is lost when a repo is re-cloned or moved; a release
+  without it ships with a stale public changelog. Continue only on an explicit yes that
+  accepts this, and remember it for the final report.
 - The latest `checks.yml` run on `__BRANCH__` is for HEAD and succeeded:
   `gh run list -R __REPO__ --workflow checks.yml --branch __BRANCH__ --limit 1 --json headSha,status,conclusion`
   shows `headSha` = HEAD, `completed`, `success`.

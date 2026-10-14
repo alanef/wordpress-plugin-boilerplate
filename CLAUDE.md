@@ -64,6 +64,10 @@ existing wp-env ports) and can be pinned in `.tooling.json` at the target root:
 
 `tag_prefix` defaults to the style of the newest existing version tag (`v` if none).
 `youtrack_project` is only used when the repo has no `.env.youtrack`.
+`changelog_url` names the plugin's KB changelog page; without it the deploy command finds the
+`fullworksplugins.com/docs/...change-log...` link in `readme.txt`. A plugin with a KB page will
+not tag without a `.env.wordpress` that sets `WP_POST_ID` and `CHANGELOG_FILE` unless the user
+explicitly accepts a stale page, and the final report then says `CHANGELOG PAGE NOT UPDATED`.
 
 ## Release pipelines (`/tk-release`, `/tk-deploy live`)
 

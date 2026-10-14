@@ -72,4 +72,4 @@ Always end with these, explicitly:
 <!-- endif -->
 - Any server side follow-ups recorded in the release notes.
 
-Then report: tag, release.yml run, what was confirmed, changelog result, YouTrack updates.
+Then report: tag, release.yml run, what was confirmed, changelog result, YouTrack updates. Put any `CHANGELOG PAGE NOT UPDATED` line on its own, first.
