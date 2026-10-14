@@ -23,10 +23,14 @@ plugin**. Each plugin repository's `CLAUDE.md` links here. Two rules follow from
 ├── composer.json                      # dev deps (phpcs, wpcs, phpcompatibility, phpunit, polyfills) + scripts
 ├── package.json                       # @wordpress/env + npm scripts
 ├── phpcs.xml / phpcs_sec.xml          # WordPress-Extra (local) / security sniffs (CI)
-├── CLAUDE.md, README.md, CHANGELOG.md
+├── scripts/release/*.sh               # /tk-release hooks: bump-version, check-dependencies, run-tests-and-mark
+├── .claude/commands/deploy-live.md    # /tk-deploy live for this plugin's release pipeline
+├── .sdlc/releases/X.Y.Z/              # release evidence (notes, TESTS_PASSED, DEPENDENCY_AUDIT)
+├── CLAUDE.md, README.md
 └── <plugin-dir>/                      # the plugin exactly as shipped (wp dist-archive + .distignore)
     ├── <plugin-dir>.php               # main file: Version, Requires PHP, Requires at least, Text Domain
     ├── readme.txt                     # Stable tag must equal the header Version
+    ├── changelog.txt                  # THE changelog (wp.org style), ships in the zip
     ├── .distignore
     └── composer.json (optional)       # production dependencies -> <plugin-dir>/vendor or includes/vendor
                                        #   (no composer.lock: plugin deps resolve fresh on every build)
@@ -45,7 +49,9 @@ plugin**. Each plugin repository's `CLAUDE.md` links here. Two rules follow from
 | `<plugin>/.distignore`, `.gitignore` | union | canonical lines plus repo-specific extras |
 | `phpcs.xml`, `phpcs_sec.xml` | `tooling/` | added if missing (`phpcs.xml.dist` renamed) |
 | `CLAUDE.md`, `README.md` | `tooling/*.block` | block between `<!-- tooling:start -->` / `<!-- tooling:end -->` replaced; rest untouched |
-| `CHANGELOG.md` | generated | baseline created if missing |
+| `<plugin>/changelog.txt` | generated / merged | created if missing (from readme.txt `== Changelog ==` version entries, else a `* Baseline.` entry); a root `CHANGELOG.md` is merged in (`## [x.y.z]` -> `= x.y.z =`, `### Fixed` + `- item` -> `* Fixed: item`, Unreleased kept, baseline placeholders dropped) and deleted. Idempotent |
+| `scripts/release/{bump-version,check-dependencies,run-tests-and-mark}.sh` | `tooling/scripts/release/` | overwritten, executable |
+| `.claude/commands/deploy-live.md` | `tooling/claude/commands/deploy-live.<pipeline>.md` | overwritten; template chosen from the pipeline (below) |
 | `<plugin>/includes/class-github-updater.php`, `tests/test-github-updater.php`, `Update URI:` header, guarded `require` block at the end of the main file | `tooling/github-updater.php`, `tooling/tests/` | GitHub-only plugins (no `Type:` in readme.txt): overwritten, header set from the git remote. Any `Type:`: all removed |
 
 Per-repo values are detected (plugin dir, main file, default branch, `*_VERSION` constant,
@@ -53,8 +59,36 @@ existing wp-env ports) and can be pinned in `.tooling.json` at the target root:
 
 ```json
 {"svn_slug": "wp-org-slug", "port": 8710, "tests_port": 8711, "php_version": "8.4",
- "phpunit_exclude": ["helper-script.php"]}
+ "phpunit_exclude": ["helper-script.php"], "tag_prefix": "v", "youtrack_project": "KEY"}
 ```
+
+`tag_prefix` defaults to the style of the newest existing version tag (`v` if none).
+`youtrack_project` is only used when the repo has no `.env.youtrack`.
+
+## Release pipelines (`/tk-release`, `/tk-deploy live`)
+
+`/tk-release X.Y.Z` runs the synced hooks: `bump-version.sh` sets header, version constant,
+Stable tag, package.json (root and plugin dir), `.pot` Project-Id-Version and renames
+`= Unreleased =` in changelog.txt, then reads every one back and fails on a mismatch (refuses
+`-` prerelease versions; X.Y only where the plugin already uses it); `check-dependencies.sh`
+resolves the plugin's composer deps fresh and blocks on any advisory, warning only for root
+composer and npm; `run-tests-and-mark.sh` runs checks.yml's gates locally (PHPUnit needs
+wp-env running, or `--no-wp-env` records it as skipped) and writes `TESTS_PASSED.md` with the
+commit. Run it after the release commit. `/tk-deploy live` then follows the rendered
+`deploy-live.md`, chosen per plugin:
+
+| Pipeline | When | Template |
+|---|---|---|
+| GitHub only | no `Type:` header | `deploy-live.github.md`: tag, release.yml, confirm the `<plugin-dir>-X.Y.Z.zip` asset, self-updater picks it up |
+| single tag | `Type: free`, `freemium`, `premium` | `deploy-live.free.md`: tag, release.yml, SVN tag check (wp.org types), manual wp.org confirmation / Freemius |
+| two-tag Freemius | `"pipeline": "freemius-two-tag"` + `free_repo`, `freemius_id`, `changelog_url` | `deploy-live.freemius-two-tag.md`: QPP's flow, tag here then the free repo |
+| own site | `"pipeline": "own-site"` + `hosting` | `deploy-live.own-site.md`: build the zip and hand off to HOSTING DevOps; never deploys |
+
+Every template checks the same preconditions (`_preconditions.md`: level with origin, clean,
+`bump-version.sh --check`, tag absent both styles, evidence present and fresh, checks.yml
+green on HEAD), asks for explicit confirmation before tagging, stops at the first failure,
+never retries a tag push, and ends with the KB changelog (`update-changelog.sh`, only with
+`.env.wordpress`) and YouTrack (`_after.md`).
 
 ## Commands (identical in every plugin repository)
 
@@ -159,15 +193,20 @@ Either naming convention is picked up: `tests/test-foo.php` or `tests/**/FooTest
 
 Version lives in the plugin header, `readme.txt` Stable tag and the `*_VERSION` constant (if
 present); CI fails when they disagree. During development carry a prerelease suffix
-(`1.4.0-alpha.1`); release.yml refuses to publish a version containing `-`. `CHANGELOG.md`
-(Keep a Changelog) is the single changelog; `readme.txt` may link to it.
+(`1.4.0-alpha.1`); release.yml refuses to publish a version containing `-`.
+
+Each plugin has exactly one changelog, `<plugin-dir>/changelog.txt`, in wp.org style: headings
+`= X.Y.Z =`, work in progress under `= Unreleased =` at the top, typed bullets (`* Added:`,
+`* Changed:`, `* Deprecated:`, `* Removed:`, `* Fixed:`, `* Security:`). It ships in the zip and
+is what `update-changelog.sh` publishes to the KB. No root `CHANGELOG.md` in plugin repos;
+`readme.txt`'s `== Changelog ==` may link to the KB page or repeat recent entries. This
+repository's own `CHANGELOG.md` is the boilerplate project's history, not `plugin-name`'s.
 
 ## Release
 
-1. Move `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD`.
-2. Set the version in every location, drop any prerelease suffix.
-3. `composer run check && npm test`.
-4. Commit, `git tag vX.Y.Z`, push branch and tag.
+A plugin: `/tk-release X.Y.Z`, commit, `/tk-deploy live` (see Release pipelines). This
+repository itself: move `## [Unreleased]` in `CHANGELOG.md` to the version, commit, tag. The
+tag fires this repo's own release.yml.
 
 ## Rolling out a tooling change
 
@@ -181,6 +220,11 @@ for repo in ~/projects/github.com/alanef/<plugin-repo> ...; do
 done
 # 3. commit and push each plugin repo, then watch its Plugin Check run
 ```
+
+Before syncing a plugin that is on WordPress.org, check its `readme.txt` has `Type: free` (or
+`freemium`). Without it the sync treats the plugin as GitHub-only: it adds the self-updater,
+which WordPress.org forbids, and renders the GitHub-only deploy command. Several older wp.org
+plugins predate the header.
 
 ## Creating a new plugin from this boilerplate
 

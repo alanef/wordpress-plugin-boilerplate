@@ -100,14 +100,18 @@ composer run make-pot              # regenerate the .pot file
   the versioned zip attached and deploys trunk + tag to WordPress.org SVN. Add the
   `SVN_USERNAME` and `SVN_PASSWORD` repository secrets to enable the deploy.
 
-Release: update `CHANGELOG.md`, set the version in the plugin header, `readme.txt` Stable tag
-and the version constant, commit, tag `vX.Y.Z`, push.
+Release: plugin changes go in `<plugin>/changelog.txt` under `= Unreleased =` (wp.org style,
+typed bullets such as `* Fixed: ...`). Synced plugins release with `/tk-release X.Y.Z`, which
+runs `scripts/release/` (version bump and read-back, dependency audit, local gates), then
+`/tk-deploy live`, which runs `.claude/commands/deploy-live.md` (preconditions, confirmation,
+tag, CI watch). This repository's own `CHANGELOG.md` is the boilerplate project's history.
 
 ## Rolling the tooling out to other plugins
 
 `tooling/` holds the templates and `bin/sync-tooling.sh <repo>` renders them into a plugin
 repository (workflows, test runner, PHPUnit config, wp-env mappings, composer/npm scripts,
-managed blocks in CLAUDE.md and README.md). Fix tooling here first, then sync each plugin.
+release hooks and the `/tk-deploy live` command, `<plugin>/changelog.txt`, managed blocks in
+CLAUDE.md and README.md). Fix tooling here first, then sync each plugin.
 See [CLAUDE.md](CLAUDE.md#rolling-out-a-tooling-change).
 
 ## Testing
@@ -132,7 +136,7 @@ tests container. Add tests as `tests/test-*.php` or `tests/**/*Test.php`, extend
   test mappings). Local-only tweaks go in `.wp-env.override.json` (see the `.example`).
 - `phpcs.xml`, `phpcs_sec.xml` - coding standards.
 - `<plugin-dir>/.distignore` - files excluded from the distribution zip.
-- `.tooling.json` (optional) - pins values for `bin/sync-tooling.sh` (SVN slug, ports).
+- `.tooling.json` (optional) - pins values for `bin/sync-tooling.sh` (SVN slug, ports, tag style, release pipeline).
 
 ## Requirements
 
@@ -243,7 +247,7 @@ npm test                               # PHPUnit in the wp-env tests container
 composer run build                     # zipped/plugin-name-free.zip
 ```
 
-Releases: set the version in the plugin header and `readme.txt`, update `CHANGELOG.md`,
-tag `vX.Y.Z` and push. CI builds the zip, creates the GitHub release and deploys to
-WordPress.org.
+Changes go in `plugin-name/changelog.txt` under `= Unreleased =`. Releases run through
+`/tk-release X.Y.Z` then `/tk-deploy live` (see CLAUDE.md): the tag makes CI build the zip,
+create the GitHub release and deploy wherever the readme `Type:` says.
 <!-- tooling:end -->
