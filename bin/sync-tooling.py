@@ -111,6 +111,12 @@ def detect(target, args):
                 sys.exit("%s is a Freemius plugin (fs_dynamic_init) with no pipeline pinned. Add .tooling.json "
                          "with \"pipeline\": \"freemius-two-tag\" (plus free_repo, freemius_id, changelog_url) or "
                          "\"single-tag\", then re-run." % plugin_dir)
+    # GitHub-only plugins get an Update URI header, inserted after Requires PHP. Refuse before
+    # anything is written, not halfway through the sync.
+    if release_type == "" and not cfg.get("pipeline") and not header(main_php, "Requires PHP"):
+        sys.exit("%s has no Type: in readme.txt (GitHub-only) and no 'Requires PHP:' header in %s, which "
+                 "the Update URI goes after. Add the header (or Type: free for a wp.org plugin), then re-run."
+                 % (plugin_dir, main_file))
     pipeline = cfg.get("pipeline") or ("github" if release_type == "" else "single-tag")
     if pipeline not in ("github", "single-tag", "freemius-two-tag", "own-site"):
         sys.exit("Unknown pipeline %r in .tooling.json (use freemius-two-tag or own-site, or omit it)." % pipeline)
