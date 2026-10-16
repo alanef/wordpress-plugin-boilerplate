@@ -22,7 +22,13 @@ Also, for this pipeline:
 
 - If `origin/develop` exists it must be at HEAD too (the release is develop fast-forwarded
   to `__BRANCH__`): `git -C $P rev-parse origin/develop` = HEAD.
-- On the free repo, tag `$TAG` must not exist
+- The free repo has its own tag style (pin `"free_tag_prefix"` in `.tooling.json`; it defaults
+  to `tag_prefix`). Only ever push `$FTAG` there:
+
+  ```bash
+  FTAG=__FREE_TAG_PREFIX__$V      # the free repo's tag
+  ```
+- On the free repo, tag `$FTAG` must not exist
   (`GIT_TERMINAL_PROMPT=0 git -C $F ls-remote --tags origin "refs/tags/$V" "refs/tags/v$V"` empty).
 - The confirmation you ask for covers both tags; say so when asking.
 
@@ -60,7 +66,7 @@ The version must equal `$V`, and the newest free repo commit must be the CI sync
 ## Tag the free repo
 
 ```bash
-git -C $F tag $TAG origin/$FB && GIT_TERMINAL_PROMPT=0 git -C $F push origin $TAG
+git -C $F tag $FTAG origin/$FB && GIT_TERMINAL_PROMPT=0 git -C $F push origin $FTAG
 ```
 
 This fires the SVN deploy workflow there. Same rule: a failed push is reported, never retried.
@@ -69,7 +75,7 @@ This fires the SVN deploy workflow there. Same rule: a failed push is reported, 
 
 ```bash
 gh run list -R __FREE_REPO__ --limit 5 --json databaseId,headBranch,workflowName,status
-gh run watch <id> -R __FREE_REPO__ --exit-status     # the run whose headBranch is $TAG
+gh run watch <id> -R __FREE_REPO__ --exit-status     # the run whose headBranch is $FTAG
 curl -s https://plugins.svn.wordpress.org/__SVN_SLUG__/tags/ | grep -c ">$V/<"   # must be 1
 ```
 

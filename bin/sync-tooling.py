@@ -10,7 +10,7 @@ the target (plugin directory, main file, default branch, version constant, wp-en
 and can be pinned in an optional .tooling.json at the target root:
 
     {"svn_slug": "...", "port": 8710, "tests_port": 8711, "php_version": "8.4", "plugin_dir": "...",
-     "tag_prefix": "v", "youtrack_project": "KEY", "pipeline": "freemius-two-tag" | "own-site",
+     "tag_prefix": "v", "free_tag_prefix": "", "youtrack_project": "KEY", "pipeline": "freemius-two-tag" | "own-site",
      "free_repo": "alanef/...", "freemius_id": "1234", "changelog_url": "https://...", "hosting": "site-slug"}
 """
 import argparse, glob, json, os, re, shutil, subprocess, sys
@@ -137,6 +137,8 @@ def detect(target, args):
         YOUTRACK_PROJECT=str(cfg.get("youtrack_project", "")), FREE_REPO=str(cfg.get("free_repo", "")),
         FREEMIUS_ID=str(cfg.get("freemius_id", "")), CHANGELOG_URL=str(cfg.get("changelog_url", "")),
         HOSTING=str(cfg.get("hosting", "")),
+        # The free repo may tag differently from this one (DEE: v6.7.2 here, 6.7.2 there).
+        FREE_TAG_PREFIX=str(cfg["free_tag_prefix"] if cfg.get("free_tag_prefix") is not None else tag_prefix),
     ), wpenv
 
 

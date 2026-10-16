@@ -63,6 +63,8 @@ existing wp-env ports) and can be pinned in `.tooling.json` at the target root:
 ```
 
 `tag_prefix` defaults to the style of the newest existing version tag (`v` if none).
+`free_tag_prefix` (two-tag Freemius only) is the free repo's own tag style; it defaults to
+`tag_prefix`. DEE tags `v6.7.2` in its dev repo but `6.7.2` in the free repo.
 `youtrack_project` is only used when the repo has no `.env.youtrack`.
 `changelog_url` names the plugin's KB changelog page; without it the deploy command finds the
 `fullworksplugins.com/docs/...change-log...` link in `readme.txt`. A plugin with a KB page will
