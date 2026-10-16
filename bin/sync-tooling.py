@@ -293,6 +293,12 @@ def sync_changelog(t, v, boilerplate=False):
                 existing = [head, []]
                 idx = next((i for i, s in enumerate(sections) if version_key(s[0]) < version_key(head)), len(sections))
                 sections.insert(idx, existing)
+            elif head != "Unreleased":
+                # A released version already in changelog.txt keeps the wording users saw; the
+                # CHANGELOG.md copy is the same release told twice. Only a baseline stub is replaced.
+                if any(l.strip() and l.strip() != "* Baseline." for l in existing[1]):
+                    continue
+                existing[1] = []
             have = {l.strip() for l in existing[1]}
             new = [i for i in items if i.strip() not in have]
             if new:
@@ -305,6 +311,15 @@ def sync_changelog(t, v, boilerplate=False):
         subprocess.run(["git", "rm", "-q", "--cached", "--ignore-unmatch", "CHANGELOG.md"], cwd=t)
         log("changelog: merged %d CHANGELOG.md entr%s into %s/changelog.txt and removed CHANGELOG.md"
             % (merged, "y" if merged == 1 else "ies", v["PLUGIN_DIR"]))
+        # A readme linking the GitHub CHANGELOG.md would now link a 404; point it at changelog.txt.
+        rp = P(v["PLUGIN_DIR"], "readme.txt")
+        if os.path.exists(rp):
+            text = read(rp)
+            fixed = re.sub(r"(github\.com/[^/\s]+/[^/\s]+/blob/[^/\s]+/)CHANGELOG\.md",
+                           lambda m: m.group(1) + v["PLUGIN_DIR"] + "/changelog.txt", text)
+            if fixed != text:
+                write(rp, fixed)
+                log("changelog: readme.txt link to CHANGELOG.md now points at %s/changelog.txt" % v["PLUGIN_DIR"])
     if created or merged:
         write(cl, cl_render(prelude, sections))
     elif not md_removed:

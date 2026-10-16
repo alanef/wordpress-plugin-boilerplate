@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Each plugin now has exactly one changelog, `<plugin-dir>/changelog.txt` in wp.org style with typed bullets under `= Unreleased =`. It ships in the zip and is what the KB publisher reads. The sync no longer creates a root `CHANGELOG.md`: it creates `changelog.txt` if missing (from the readme's changelog entries, or a baseline), merges any real entries from an existing root `CHANGELOG.md` into it, and deletes that file. Two changelogs had started to diverge, and the root one never reached users.
 - `check-dependencies.sh` audits a committed plugin `composer.lock` as it stands, but sets an untracked local one aside and resolves fresh as CI does, then restores it. A stale local lock (Quick PayPal Payments keeps one, gitignored) was being audited instead of what the release actually ships.
+- The changelog migration no longer duplicates a release: a version already in `changelog.txt` keeps its wording, and `CHANGELOG.md` entries only fill new versions, Unreleased and `* Baseline.` stubs. Stop User Enumeration 1.7.9 and Contact Form Clean and Simple 4.12.3 were each told twice in the first rollout pass.
+- A readme.txt link to the GitHub `CHANGELOG.md` is repointed at `<plugin-dir>/changelog.txt`, since the sync deletes the file it linked.
 - The GitHub release body links to `<plugin-dir>/changelog.txt` instead of the root `CHANGELOG.md`.
 
 ## [1.1.0] - 2026-10-09
