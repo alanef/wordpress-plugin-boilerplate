@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A readme.txt link to the GitHub `CHANGELOG.md` is repointed at `<plugin-dir>/changelog.txt`, since the sync deletes the file it linked.
 - A GitHub-only plugin with no `Requires PHP:` header is refused before the sync writes anything. It used to fail halfway, leaving rewritten workflows and an updater class behind (umami-tracking).
 - The GitHub release body links to `<plugin-dir>/changelog.txt` instead of the root `CHANGELOG.md`.
+- `bump-version.sh` also sets the version in the `package-lock.json` beside each versioned `package.json`, at the top level and in `packages[""]`, and reads both back. npm keeps the version there twice, and after `/tk-release` the lock was left on the old version (Display Eventbrite Events).
 
 ## [1.1.0] - 2026-10-09
 

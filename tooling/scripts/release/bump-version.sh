@@ -11,6 +11,7 @@
 #   version constant ($CONST, if any)     } and release.yml if the tag differs
 #   readme.txt Stable tag                 }
 #   package.json version                    root and plugin dir, where the file has a "version" key
+#   package-lock.json beside it             top-level "version" and packages[""].version
 #   languages/__TEXT_DOMAIN__.pot           Project-Id-Version, when the .pot carries a version
 #   changelog.txt                           "= Unreleased =" becomes "= X.Y.Z =", or the top
 #                                           heading must already be X.Y.Z
@@ -48,6 +49,10 @@ Q="${V//./\\.}"
 set_first() { perl -0pi -e "$1" "$2"; }
 # A package.json without a "version" key (a private dev project) carries no version to keep in step.
 has_version() { [ -f "$1" ] && grep -qE '"version"[[:space:]]*:' "$1"; }
+# npm copies package.json's version into its lock twice: top level (the first "version" key,
+# after "name") and packages[""] (lockfile v2+). Only a lock beside a versioned package.json counts.
+LOCK_ROOT='("packages"\s*:\s*\{\s*""\s*:\s*\{[^{}]*?"version"\s*:\s*")'
+lock_root_version() { perl -0ne "print \$2 if /$LOCK_ROOT([^\"]*)\"/" "$1"; }
 
 if [ "$CHECK" = 0 ]; then
 	set_first "s/^([ \t]*\*?[ \t]*Version:[ \t]*)\S+/\${1}$V/m" "$MAIN"
@@ -56,7 +61,12 @@ if [ "$CHECK" = 0 ]; then
 	fi
 	set_first "s/^(Stable tag:[ \t]*)\S+/\${1}$V/m" "$README"
 	for pj in "$ROOT/package.json" "$P/package.json"; do
-		has_version "$pj" && set_first "s/(\"version\"\s*:\s*\")[^\"]*\"/\${1}$V\"/" "$pj"
+		has_version "$pj" || continue
+		set_first "s/(\"version\"\s*:\s*\")[^\"]*\"/\${1}$V\"/" "$pj"
+		lock="${pj%package.json}package-lock.json"
+		[ -f "$lock" ] || continue
+		set_first "s/(\"version\"\s*:\s*\")[^\"]*\"/\${1}$V\"/" "$lock"
+		set_first "s/$LOCK_ROOT[^\"]*\"/\${1}$V\"/" "$lock"
 	done
 	if [ -n "$POT" ]; then
 		set_first "s/(\"Project-Id-Version: [^\"\\\\]*? )[0-9][0-9A-Za-z.+-]*(\\\\n\")/\${1}$V\${2}/" "$POT"
@@ -80,7 +90,15 @@ if [ -n "$CONST" ]; then
 	found[constant]="$(grep -m1 -oP "define\(\s*['\"]$CONST['\"]\s*,\s*['\"]\K[^'\"]*" "$MAIN" || true)"
 fi
 for pj in "$ROOT/package.json" "$P/package.json"; do
-	has_version "$pj" && found["package_json:${pj#"$ROOT"/}"]="$(grep -m1 -oP '"version"\s*:\s*"\K[^"]*' "$pj")"
+	has_version "$pj" || continue
+	found["package_json:${pj#"$ROOT"/}"]="$(grep -m1 -oP '"version"\s*:\s*"\K[^"]*' "$pj")"
+	lock="${pj%package.json}package-lock.json"
+	[ -f "$lock" ] || continue
+	found["package_lock:${lock#"$ROOT"/}"]="$(grep -m1 -oP '"version"\s*:\s*"\K[^"]*' "$lock" || true)"
+	# lockfile v1 has no "packages" block; v2 and v3 must carry the version there too
+	if grep -qE '"packages"[[:space:]]*:' "$lock"; then
+		found["package_lock_root:${lock#"$ROOT"/}"]="$(lock_root_version "$lock")"
+	fi
 done
 if [ -n "$POT" ]; then
 	pot_v="$(grep -m1 -oP '"Project-Id-Version: [^"\\]*? \K[0-9][0-9A-Za-z.+-]*(?=\\n")' "$POT" || true)"

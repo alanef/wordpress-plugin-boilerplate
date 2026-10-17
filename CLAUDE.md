@@ -74,7 +74,8 @@ explicitly accepts a stale page, and the final report then says `CHANGELOG PAGE 
 ## Release pipelines (`/tk-release`, `/tk-deploy live`)
 
 `/tk-release X.Y.Z` runs the synced hooks: `bump-version.sh` sets header, version constant,
-Stable tag, package.json (root and plugin dir, where it has a version), `.pot` Project-Id-Version and renames
+Stable tag, package.json (root and plugin dir, where it has a version) and the
+`package-lock.json` beside it (top level and `packages[""]`), `.pot` Project-Id-Version and renames
 `= Unreleased =` in changelog.txt, then reads every one back and fails on a mismatch (refuses
 `-` prerelease versions; X.Y only where the plugin already uses it); `check-dependencies.sh`
 resolves the plugin's composer deps fresh (a committed lock is audited as-is; an untracked
