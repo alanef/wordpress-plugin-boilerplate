@@ -208,6 +208,12 @@ resets core tables only, so clear plugin tables in `set_up` if tests depend on t
 
 Either naming convention is picked up: `tests/test-foo.php` or `tests/**/FooTest.php`.
 
+**First `wp-env start` after a sync fails with EACCES.** Docker creates the newly mapped paths
+(`phpunit.xml.dist`, `tests`, `vendor`, `.htaccess`) as empty root-owned stubs in
+`~/wp-env/<hash>/WordPress` and `tests-WordPress`, then can't write to them. Delete those stubs
+(`sudo rm` if needed; `ls -l` shows which are root-owned and 0 bytes) and start again. It only
+happens once per repo, the first time a mapping appears.
+
 ## Versioning and changelog
 
 Version lives in the plugin header, `readme.txt` Stable tag and the `*_VERSION` constant (if
