@@ -162,6 +162,8 @@ Known traps already handled in the templates (do not regress them):
 - WP-CLI's bundled Composer 2.2 rejects the runner token that setup-php persists in
   auth.json, and anonymous installs hit GitHub's rate limit. The dist-archive step strips
   the persisted auth and passes the token back as http-basic, pinned to v3.1.0.
+  Release-only repos (Freemius, own-site) keep their own workflows, so this fix has to be
+  ported by hand; an anonymous install (`COMPOSER_AUTH: "{}"`) flakes in CI.
 - `softprops/action-gh-release` does not support `path#name`; the zip is copied to its
   versioned name before upload.
 - Plugin Check runs on the *built* zip so `.distignore` mistakes surface in CI.
