@@ -11,7 +11,11 @@ and can be pinned in an optional .tooling.json at the target root:
 
     {"svn_slug": "...", "port": 8710, "tests_port": 8711, "php_version": "8.4", "plugin_dir": "...",
      "tag_prefix": "v", "free_tag_prefix": "", "youtrack_project": "KEY", "pipeline": "freemius-two-tag" | "own-site",
-     "free_repo": "alanef/...", "freemius_id": "1234", "changelog_url": "https://...", "hosting": "site-slug"}
+     "free_repo": "alanef/...", "freemius_id": "1234", "changelog_url": "https://...", "hosting": "site-slug",
+     "freemius_deploy": "workflow"}
+
+"freemius_deploy": "workflow" is for a single-tag Freemius plugin (Type: premium or freemium) whose
+own release.yml uploads to Freemius as beta: /tk-deploy live then says to promote the beta, not upload.
 """
 import argparse, glob, json, os, re, shutil, subprocess, sys
 
@@ -123,6 +127,10 @@ def detect(target, args):
     missing = [k for k in {"freemius-two-tag": ("free_repo", "freemius_id", "changelog_url"), "own-site": ("hosting",)}.get(pipeline, ()) if not cfg.get(k)]
     if missing:
         sys.exit("pipeline %s needs %s in .tooling.json" % (pipeline, ", ".join(missing)))
+    if cfg.get("freemius_deploy") not in (None, "manual", "workflow"):
+        sys.exit("freemius_deploy in .tooling.json must be \"manual\" or \"workflow\".")
+    if cfg.get("freemius_deploy") == "workflow" and (pipeline != "single-tag" or release_type not in ("premium", "freemium") or not cfg.get("freemius_id")):
+        sys.exit("freemius_deploy \"workflow\" needs pipeline single-tag, readme Type: premium or freemium, and freemius_id.")
     return dict(
         PLUGIN_DIR=plugin_dir, MAIN_FILE=main_file, PLUGIN_NAME=header(main_php, "Plugin Name") or plugin_dir,
         TEXT_DOMAIN=header(main_php, "Text Domain") or plugin_dir, PHP_MIN=php_min,
@@ -137,6 +145,7 @@ def detect(target, args):
         YOUTRACK_PROJECT=str(cfg.get("youtrack_project", "")), FREE_REPO=str(cfg.get("free_repo", "")),
         FREEMIUS_ID=str(cfg.get("freemius_id", "")), CHANGELOG_URL=str(cfg.get("changelog_url", "")),
         HOSTING=str(cfg.get("hosting", "")),
+        FREEMIUS_DEPLOY=str(cfg.get("freemius_deploy", "manual")),
         # The free repo may tag differently from this one (DEE: v6.7.2 here, 6.7.2 there).
         FREE_TAG_PREFIX=str(cfg["free_tag_prefix"] if cfg.get("free_tag_prefix") is not None else tag_prefix),
     ), wpenv
@@ -343,10 +352,13 @@ COND_RE = re.compile(r"^<!-- if (\w+) -->\n(.*?)^<!-- endif -->\n", re.S | re.M)
 
 
 def conditionals(text, v):
-    """Keep <!-- if wporg|freemius|nowporg --> ... <!-- endif --> blocks that apply to this plugin's Type:."""
+    """Keep <!-- if wporg|freemius|nowporg|fsmanual|fsworkflow --> ... <!-- endif --> blocks that apply."""
     flags = {"wporg": v["RELEASE_TYPE"] in ("free", "freemium"),
              "freemius": v["RELEASE_TYPE"] in ("freemium", "premium")}
     flags["nowporg"] = not flags["wporg"]
+    # Who uploads to Freemius: the plugin's own release.yml ("workflow") or a person ("manual").
+    flags["fsworkflow"] = flags["freemius"] and v.get("FREEMIUS_DEPLOY") == "workflow"
+    flags["fsmanual"] = flags["freemius"] and not flags["fsworkflow"]
     return COND_RE.sub(lambda m: m.group(2) if flags[m.group(1)] else "", text)
 
 

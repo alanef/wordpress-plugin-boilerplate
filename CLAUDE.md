@@ -109,6 +109,12 @@ A Freemius plugin (any `fs_dynamic_init(` in the plugin dir) with no `pipeline` 
 `.tooling.json` is refused outright: pin `freemius-two-tag` or `single-tag` first, so a
 missing pin can never overwrite its own workflows with a full sync.
 
+**Single-tag Freemius plugin with its own Freemius upload.** Pin `"pipeline": "single-tag"`,
+`"freemius_deploy": "workflow"` and `freemius_id`, set `Type: premium` (or `freemium`), and sync
+with `--release-only` so its own workflows are kept. `/tk-deploy live` then expects release.yml
+to have uploaded a beta and leaves only "promote to released" as manual. Without the pin, a
+single-tag Freemius plugin is told to upload the zip by hand.
+
 ## Commands (identical in every plugin repository)
 
 ```bash

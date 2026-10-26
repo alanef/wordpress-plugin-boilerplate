@@ -45,11 +45,17 @@ The wordpress.org API
 will NOT show `$V` yet if release confirmation is on: the release waits for a committer to
 confirm it. That is expected; see the manual steps.
 <!-- endif -->
-<!-- if freemius -->
+<!-- if fsmanual -->
 
 Freemius: `release.yml` resolves the Freemius target (it is in the run summary) but the
 single-tag workflow has **no Freemius deploy step yet**, so nothing was uploaded there.
 That is a manual step below; do not treat its absence from the run as a failure.
+<!-- endif -->
+<!-- if fsworkflow -->
+
+Freemius: this plugin's own `release.yml` uploads the build to Freemius (id __FREEMIUS_ID__)
+as **beta**. Its deploy job must have succeeded; check the run summary for the uploaded
+version. Do not upload the zip again by hand.
 <!-- endif -->
 
 <!-- include changelog -->
@@ -65,7 +71,11 @@ Always end with these, explicitly:
   committer approves it from the confirmation email or the plugin's release confirmation
   page. Until then the directory still serves `$PREV`.
 <!-- endif -->
-<!-- if freemius -->
+<!-- if fsworkflow -->
+- **Freemius.** Promote $V from beta to released in the Freemius dashboard. The workflow
+  already uploaded it; paying customers do not get the update until it is released there.
+<!-- endif -->
+<!-- if fsmanual -->
 - **Freemius.** Upload `__PLUGIN_DIR__-$V.zip` from the GitHub release in the Freemius
   dashboard and promote it from beta to released. Paying customers do not get the update
   before it is released there.
