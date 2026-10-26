@@ -39,7 +39,15 @@ if [ -f "$P/composer.json" ]; then
 	else
 		resolve="using committed __PLUGIN_DIR__/composer.lock"; resolve_rc=0
 	fi
-	if [ "$resolve_rc" = 0 ]; then
+	# A plugin whose composer.json only autoloads resolves to a lock with no packages, and
+	# composer audit exits 1 on that ("No installed packages found") rather than 0.
+	no_pkgs=0
+	if [ "$resolve_rc" = 0 ] && php -r '$l = json_decode(file_get_contents($argv[1]), true); exit(is_array($l) && empty($l["packages"]) ? 0 : 1);' "$P/composer.lock" 2>/dev/null; then
+		no_pkgs=1
+	fi
+	if [ "$no_pkgs" = 1 ]; then
+		prod="__PLUGIN_DIR__/composer.json requires no packages: the plugin ships no Composer dependencies."; prod_rc=0
+	elif [ "$resolve_rc" = 0 ]; then
 		prod=$(run "$P" composer audit --locked --no-dev --format=plain); prod_rc=$?
 		[ -n "$prod" ] || prod="No security vulnerability advisories found."
 	else
@@ -48,7 +56,7 @@ $resolve"; prod_rc=1
 	fi
 	[ "$made_lock" = 1 ] && rm -f "$P/composer.lock"
 	if [ -n "$held_lock" ]; then mv -f "$held_lock" "$P/composer.lock"; held_lock=""; trap - EXIT; fi
-	prod_result=$( [ "$prod_rc" = 0 ] && echo clean || echo ADVISORIES )
+	prod_result=$( [ "$no_pkgs" = 1 ] && echo "none shipped" || { [ "$prod_rc" = 0 ] && echo clean || echo ADVISORIES; } )
 else
 	prod="__PLUGIN_DIR__/composer.json absent: the plugin ships no Composer dependencies."; prod_rc=0; prod_result="none shipped"
 fi
