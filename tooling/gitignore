@@ -14,6 +14,7 @@ node_modules/
 .phpunit.result.cache
 *.phpunit.result.cache
 .wp-env.override.json
+.wp-env/
 .env
 .env.*
 !.env.example

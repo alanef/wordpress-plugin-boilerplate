@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `check-dependencies.sh` no longer blocks a release when the plugin's `composer.json` only autoloads. The fresh resolve gives a lock with no packages, and `composer audit` exits 1 on that ("No installed packages found"), which the script read as advisories in shipped code. It now reports "none shipped" (Fullworks Gravity Image Resize).
+- The synced `.gitignore` now ignores `.wp-env/`. Docker creates it as a root-owned folder (an `mu-plugins` stub) when wp-env maps one, so it showed as an untracked change in plugin repos (Anti-Spam), and a root-owned folder can't be removed without sudo. The boilerplate's own `.gitignore` already had it, but the synced copy didn't.
 
 ## [1.1.0] - 2026-10-09
 
