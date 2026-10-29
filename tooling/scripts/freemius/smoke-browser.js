@@ -10,7 +10,8 @@
 // Logs in as admin, loads every path in the paths file and the block editor, and:
 //   FAIL  an uncaught JavaScript error from one of the plugin's scripts
 //   FAIL  a plugin asset (under /plugins/<dir>/) that does not load (4xx/5xx or failed)
-//   FAIL  a block whose block.json ships in the build but is not registered in the editor
+//   FAIL  a block that is not registered in the editor: every block.json in the build, plus
+//         the smoke file's block lines (blocks registered in JavaScript with no block.json)
 //   WARN  uncaught errors from other scripts, console errors from the plugin's scripts
 // Exit code 1 on any FAIL.
 
@@ -65,7 +66,7 @@ const bad = (m) => { console.log(`FAIL ${m}`); fail = 1; pageFailed = true; };
         await page.waitForFunction(() => window.wp && wp.blocks && wp.blocks.getBlockTypes().length > 0, null, { timeout: 45000 });
         const missing = await page.evaluate((names) => names.filter((n) => !wp.blocks.getBlockType(n)), blocks);
         for (const n of blocks) {
-            missing.includes(n) ? bad(`block ${n} ships a block.json but is not registered in the editor (not in the inserter)`) : console.log(`ok   block ${n} registered`);
+            missing.includes(n) ? bad(`block ${n} is not registered in the editor, so it is missing from the inserter`) : console.log(`ok   block ${n} registered`);
         }
     } catch (e) {
         bad(`the block editor did not start: ${e.message.split('\n')[0]}`);

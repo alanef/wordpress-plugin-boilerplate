@@ -13,6 +13,8 @@
 # .freemius-free-smoke, which may add
 #   url /some/path            a page to load (logged in as admin)
 #   shortcode [a_shortcode]   rendered on a published page that is then loaded
+#   block namespace/name      a block that must be registered in the editor, for blocks
+#                             registered in JavaScript with no block.json (found automatically)
 # Fails on an HTTP 500, WordPress's critical error page, or a PHP fatal, parse error or uncaught
 # exception in debug.log. Warnings and notices from the plugin are listed but do not fail.
 # Then loads the same pages and the block editor in a headless browser (smoke-browser.js):
@@ -121,8 +123,12 @@ if [ -f "$ROOT/.freemius-free-smoke" ]; then
 fi
 
 # Browser pass, before debug.log is read, so PHP errors from the scripts' own requests count.
-# Blocks: every block.json in the build, by name (src/ and build/ copies name the same block).
-blocks=$(find "$W/$DIR" -name block.json -not -path '*/node_modules/*' -exec php -r 'echo json_decode(file_get_contents($argv[1]))->name ?? "", "\n";' {} \; | sort -u)
+# Blocks: every block.json in the build, by name (src/ and build/ copies name the same block),
+# plus the smoke file's block lines.
+blocks=$( {
+	find "$W/$DIR" -name block.json -not -path '*/node_modules/*' -exec php -r 'echo json_decode(file_get_contents($argv[1]))->name ?? "", "\n";' {} \;
+	[ -f "$ROOT/.freemius-free-smoke" ] && sed -n 's/^block[[:space:]]\{1,\}\([^[:space:]]*\).*/\1/p' "$ROOT/.freemius-free-smoke"
+} | sort -u)
 if [ ! -d "$HERE/node_modules/playwright" ]; then
 	(cd "$HERE" && npm install --no-audit --no-fund >/dev/null 2>&1) || bad "could not install the browser check (npm install in $HERE)"
 fi
