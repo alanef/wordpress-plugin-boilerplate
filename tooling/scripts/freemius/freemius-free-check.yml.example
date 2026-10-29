@@ -4,9 +4,12 @@
 # step with this plugin's own premium build (the same steps its release.yml uses, so what is
 # checked is what will ship). Everything else stays as it is.
 #
-# Run it from the Actions tab (or `gh workflow run freemius-free-check.yml --ref develop`) on a
-# commit whose version is an alpha (X.Y.Z-alpha.N). It uploads that build to Freemius as a
-# PENDING version (offered to nobody unless released in the dashboard), downloads the free zip
+# Run it on a commit whose version is a prerelease (X.Y.Z-alpha.N) by pushing that commit to a
+# branch named for the version, then deleting the branch once the run has started:
+#     git push origin HEAD:free-check/6.9.0-alpha.3 && git push origin --delete free-check/6.9.0-alpha.3
+# (GitHub only offers "Run workflow" for a workflow on the default branch, which in a two-tag
+# Freemius repo is the release branch, so a push trigger is what works from develop.)
+# It uploads that build to Freemius as a PENDING version (offered to nobody unless released in the dashboard), downloads the free zip
 # Freemius generates, and checks that zip: no premium code in it, and no fatals.
 #
 # Also add the same two checks to release.yml, between downloading the free version and
@@ -19,6 +22,8 @@
 name: Freemius free build check
 
 on:
+  push:
+    branches: ['free-check/**']
   workflow_dispatch:
 
 permissions:

@@ -137,14 +137,19 @@ So the free zip Freemius generates is checked, never our own source. The sync re
 | `freemius-free-build.js` | uploads a **prerelease** (`X.Y.Z-alpha.N` or `-beta.N`, never a release version) to Freemius and downloads the free zip it generates. Freemius keeps the upload **pending**, offered to nobody unless released in the dashboard, so developers may run it freely (Alan, 2026-10-29) |
 | `check-free-build.sh <free.zip> [<premium.zip>]` | `php -l` on every file; every `@fs_premium_only` path absent; no premium-named files; `free-build-scan.php`; the project's `.freemius-free-denylist` (regexes that must never ship) |
 | `free-build-scan.php` | token scan, ignoring comments: premium-named definitions that survived (`leak-def`), guards left in an `if` (`guard-left`), calls to stripped `__premium_only` code (`dangling-call`), functions or classes defined only in premium code (`only-premium`). Names checked with `function_exists()` / `class_exists()` / `method_exists()` count as guarded. Accepted findings go in `.freemius-free-scan-ignore` as `<kind> <name> <reason>`; a line with no reason is refused and `leak-def` can never be ignored |
-| `smoke-free-build.sh <free.zip>` | installs the free zip alone on a clean wp-env WordPress (`WP_DEBUG` on), activates it, loads the front page, wp-admin, Plugins and every `?page=` menu screen, plus the `url` and `shortcode` lines of the project's `.freemius-free-smoke`; fails on HTTP 500, the critical error page, or a fatal in debug.log. Takes the environment down afterwards |
+| `smoke-free-build.sh <free.zip>` | installs the free zip alone on a clean wp-env WordPress (`WP_DEBUG` on), activates it, loads the front page, wp-admin, Plugins and every `?page=` menu screen, before and after skipping the Freemius opt-in (Freemius hides some menus until then), plus the `url` and `shortcode` lines of the project's `.freemius-free-smoke`; fails on HTTP 500, the critical error page, or a fatal in debug.log. Takes the environment down afterwards |
 | `freemius-free-check.yml.example` | the workflow to copy to `.github/workflows/freemius-free-check.yml`; its BUILD step is replaced with the plugin's own premium build from release.yml |
 
 Two places run it:
 
-1. **During development**, on a prerelease version (keep the suffix above any already uploaded: after `6.9.0-beta.2`, use `-beta.3`, since `-alpha` sorts lower): run `freemius-free-check.yml` (Actions tab or
-   `gh workflow run freemius-free-check.yml --ref develop`) before asking for a release. A
-   rejected upload ("already exists") means bump the alpha number.
+1. **During development**, on a prerelease version (keep the suffix above any already uploaded: after `6.9.0-beta.2`, use `-beta.3`, since `-alpha` sorts lower): push the commit to a branch named
+   for the version (`git push origin HEAD:free-check/6.9.0-alpha.3`), which runs
+   `freemius-free-check.yml`, then delete that branch,
+   before asking for a release. "Run workflow" and `gh workflow run` only work once the workflow
+   is on the default branch, which in a two-tag repo is the release branch. A rejected upload
+   ("already exists") means bump the prerelease number. The readme `Stable tag` follows the
+   prerelease version on develop (Plugin Check fails `stable_tag_mismatch` otherwise, and CI
+   requires header = Stable tag); `bump-version.sh` sets both to the release version.
 2. **In release.yml**, as a blocking step between downloading the free version and pushing it to
    the free repo or wordpress.org, so a release cannot skip it. The example's header has the step.
 

@@ -8,7 +8,8 @@
 #   scripts/freemius/smoke-free-build.sh <free.zip>
 #
 # Steps: activate (no output allowed beyond the success line); load the front page, wp-admin,
-# Plugins, and every admin.php?page= screen in the admin menu; then each line of the project's
+# Plugins, and every ?page= screen in the admin menu, before and after skipping the Freemius
+# opt-in; then each line of the project's
 # .freemius-free-smoke, which may add
 #   url /some/path            a page to load (logged in as admin)
 #   shortcode [a_shortcode]   rendered on a published page that is then loaded
@@ -82,11 +83,26 @@ visit() {
 visit "/"
 visit "/wp-admin/"
 visit "/wp-admin/plugins.php"
-# Every menu screen added with a ?page= slug, wherever its parent is (admin.php, options-general.php, edit.php...).
-for href in $(curl -s -b "$jar" "$URL/wp-admin/" | grep -oP 'href="\K[^"]*[?&](amp;)?page=[^"]*' | sed 's/&amp;/\&/g' | sort -u); do
-	case "$href" in http*) href="/${href#*://*/}" ;; /*) ;; *) href="/wp-admin/$href" ;; esac
-	visit "$href"
-done
+# Every menu screen added with a ?page= slug, wherever its parent is (admin.php, options-general.php,
+# edit.php...). Twice: as a fresh install first sees it, then after "Skip" on the Freemius opt-in,
+# because Freemius trims the plugin's menu until the user chooses (QPP's top-level screen only
+# appears after it).
+sweep() {
+	for href in $(curl -s -b "$jar" "$URL/wp-admin/" | grep -oP 'href="\K[^"]*[?&](amp;)?page=[^"]*' | sed 's/&amp;/\&/g' | sort -u); do
+		case "$href" in http*) href="/${href#*://*/}" ;; /*) ;; *) href="/wp-admin/$href" ;; esac
+		case " $seen " in *" $href "*) continue ;; esac
+		seen="$seen $href"
+		visit "$href"
+	done
+}
+seen=""
+sweep
+if cli wp eval 'if ( function_exists( "freemius" ) && freemius( __FREEMIUS_ID__ ) ) { freemius( __FREEMIUS_ID__ )->skip_connection(); echo "skipped"; }' | grep -q skipped; then
+	echo "ok   Freemius opt-in skipped, as a user choosing Skip"
+	sweep
+else
+	echo "WARN could not skip the Freemius opt-in for module __FREEMIUS_ID__; menus hidden before opt-in were not swept"
+fi
 
 if [ -f "$ROOT/.freemius-free-smoke" ]; then
 	while IFS= read -r line; do
