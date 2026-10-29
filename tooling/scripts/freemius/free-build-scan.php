@@ -83,9 +83,8 @@ function scan( $dir ) {
 			$t = $code[ $i ];
 			// PHP 8 tokenises Ns\Name and \Ns\Name as one name token; compare on the last segment,
 			// which is what a definition (always a bare T_STRING) is keyed on.
-			$qualified = array_filter( array( defined( 'T_NAME_QUALIFIED' ) ? T_NAME_QUALIFIED : null, defined( 'T_NAME_FULLY_QUALIFIED' ) ? T_NAME_FULLY_QUALIFIED : null ) );
-			if ( is_array( $t ) && in_array( $t[0], $qualified, true ) ) {
-				$t = array( T_STRING, substr( strrchr( '\\' . $t[1], '\\' ), 1 ), $t[2] );
+			if ( is_array( $t ) && T_STRING !== $t[0] && in_array( $t[0], name_tokens(), true ) ) {
+				$t = array( T_STRING, last_segment( $t[1] ), $t[2] );
 			}
 			if ( ! is_array( $t ) || T_STRING !== $t[0] ) {
 				continue;
@@ -106,18 +105,25 @@ function scan( $dir ) {
 				continue;
 			}
 			if ( '(' === $next && in_array( $lc, array( 'function_exists', 'class_exists', 'method_exists' ), true ) ) {
-				// The guarded name is the first (function/class_exists) or second (method_exists) string argument.
-				for ( $j = $i + 2, $args = 0; $j < $n && ')' !== $code[ $j ]; $j++ ) {
-					if ( is_array( $code[ $j ] ) && T_CONSTANT_ENCAPSED_STRING === $code[ $j ][0] ) {
-						$guarded[ strtolower( trim( $code[ $j ][1], '\'"\\' ) ) ] = true;
+				// Every name in the call counts as guarded: a string ('Ns\\Name' keyed on its last
+				// segment, as definitions are) or Name::class. Then skip past the call, so the
+				// names inside it are not read as uses.
+				for ( $j = $i + 2; $j < $n && ')' !== $code[ $j ]; $j++ ) {
+					$a = $code[ $j ];
+					if ( is_array( $a ) && T_CONSTANT_ENCAPSED_STRING === $a[0] ) {
+						$guarded[ strtolower( last_segment( trim( $a[1], '\'"' ) ) ) ] = true;
+					} elseif ( is_array( $a ) && in_array( $a[0], name_tokens(), true ) && is_array( $code[ $j + 1 ] ?? null ) && T_DOUBLE_COLON === $code[ $j + 1 ][0]
+						&& is_array( $code[ $j + 2 ] ?? null ) && T_CLASS === $code[ $j + 2 ][0] ) {
+						$guarded[ strtolower( last_segment( $a[1] ) ) ] = true;
 					}
 				}
+				$i = $j;
 				continue;
 			}
 			$obj = in_array( $pid, array( T_OBJECT_OPERATOR, T_DOUBLE_COLON ), true ) || ( defined( 'T_NULLSAFE_OBJECT_OPERATOR' ) && T_NULLSAFE_OBJECT_OPERATOR === $pid );
 			if ( '(' === $next ) {
 				$kind = $obj ? 'method' : ( T_NEW === $pid ? 'class' : 'function' );
-			} elseif ( T_NEW === $pid || ( is_array( $next ) && T_DOUBLE_COLON === $next[0] ) ) {
+			} elseif ( T_NEW === $pid || ( is_array( $next ) && T_DOUBLE_COLON === $next[0] && ! ( is_array( $code[ $i + 2 ] ?? null ) && T_CLASS === $code[ $i + 2 ][0] ) ) ) {
 				$kind = 'class';
 			} else {
 				continue;
@@ -126,6 +132,17 @@ function scan( $dir ) {
 		}
 	}
 	return array( $defs, $calls, $guarded, $sdk );
+}
+
+/** T_STRING plus PHP 8's single-token qualified names. */
+function name_tokens() {
+	return array_values( array_filter( array( T_STRING, defined( 'T_NAME_QUALIFIED' ) ? T_NAME_QUALIFIED : null, defined( 'T_NAME_FULLY_QUALIFIED' ) ? T_NAME_FULLY_QUALIFIED : null ) ) );
+}
+
+/** 'Ns\\Sub\\Name' or '\\Name' to 'Name'. */
+function last_segment( $name ) {
+	$p = strrpos( $name, '\\' );
+	return false === $p ? $name : substr( $name, $p + 1 );
 }
 
 /** True when token $i sits inside the parentheses of an if or elseif condition. */
