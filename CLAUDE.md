@@ -115,6 +115,42 @@ with `--release-only` so its own workflows are kept. `/tk-deploy live` then expe
 to have uploaded a beta and leaves only "promote to released" as manual. Without the pin, a
 single-tag Freemius plugin is told to upload the zip by hand.
 
+## Freemius free build check (Freemius plugins with a free version)
+
+Freemius makes the wordpress.org build by stripping the premium code from our premium zip:
+functions, methods, files and folders whose names contain exactly `__premium_only`, the paths in
+the main file's `@fs_premium_only` header, and blocks guarded by `is__premium_only()` or
+`can_use_premium_code__premium_only()`. A missed guard does one of two things, and both reach
+wordpress.org unless the free zip itself is checked:
+
+- **ships premium code**: a typo (`__premum_only`), or a compound condition the stripper does not
+  recognise, leaves paid code in the free build, which gives it away and breaches the
+  wordpress.org guidelines;
+- **fatals**: free code still calls something that was stripped.
+
+So the free zip Freemius generates is checked, never our own source. The sync renders
+`scripts/freemius/` into every plugin with `"pipeline": "freemius-two-tag"` or `Type: freemium`
+(it needs `freemius_id`):
+
+| File | What it does |
+|---|---|
+| `freemius-free-build.js` | uploads an **alpha** (`X.Y.Z-alpha.N` only) to Freemius and downloads the free zip it generates. Freemius keeps the upload **pending**, offered to nobody unless released in the dashboard, so developers may run it freely (Alan, 2026-10-29) |
+| `check-free-build.sh <free.zip> [<premium.zip>]` | `php -l` on every file; every `@fs_premium_only` path absent; no premium-named files; `free-build-scan.php`; the project's `.freemius-free-denylist` (regexes that must never ship) |
+| `free-build-scan.php` | token scan, ignoring comments: premium-named definitions that survived (`leak-def`), guards left in an `if` (`guard-left`), calls to stripped `__premium_only` code (`dangling-call`), functions or classes defined only in premium code (`only-premium`). Names checked with `function_exists()` / `class_exists()` / `method_exists()` count as guarded. Accepted findings go in `.freemius-free-scan-ignore` as `<kind> <name> <reason>`; a line with no reason is refused and `leak-def` can never be ignored |
+| `smoke-free-build.sh <free.zip>` | installs the free zip alone on a clean wp-env WordPress (`WP_DEBUG` on), activates it, loads the front page, wp-admin, Plugins and every `?page=` menu screen, plus the `url` and `shortcode` lines of the project's `.freemius-free-smoke`; fails on HTTP 500, the critical error page, or a fatal in debug.log. Takes the environment down afterwards |
+| `freemius-free-check.yml.example` | the workflow to copy to `.github/workflows/freemius-free-check.yml`; its BUILD step is replaced with the plugin's own premium build from release.yml |
+
+Two places run it:
+
+1. **During development**, on an alpha: run `freemius-free-check.yml` (Actions tab or
+   `gh workflow run freemius-free-check.yml --ref develop`) before asking for a release. A
+   rejected upload ("already exists") means bump the alpha number.
+2. **In release.yml**, as a blocking step between downloading the free version and pushing it to
+   the free repo or wordpress.org, so a release cannot skip it. The example's header has the step.
+
+Run locally against any free zip, for example the live one:
+`curl -sLO https://downloads.wordpress.org/plugin/<slug>.latest-stable.zip && scripts/freemius/check-free-build.sh <slug>.latest-stable.zip`.
+
 ## Commands (identical in every plugin repository)
 
 ```bash

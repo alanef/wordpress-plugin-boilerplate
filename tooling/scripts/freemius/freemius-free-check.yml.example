@@ -1,0 +1,85 @@
+# Managed by wordpress-plugin-boilerplate/tooling - fix there first, then run bin/sync-tooling.sh
+#
+# Template for .github/workflows/freemius-free-check.yml. Copy it there and replace the BUILD
+# step with this plugin's own premium build (the same steps its release.yml uses, so what is
+# checked is what will ship). Everything else stays as it is.
+#
+# Run it from the Actions tab (or `gh workflow run freemius-free-check.yml --ref develop`) on a
+# commit whose version is an alpha (X.Y.Z-alpha.N). It uploads that build to Freemius as a
+# PENDING version (offered to nobody unless released in the dashboard), downloads the free zip
+# Freemius generates, and checks that zip: no premium code in it, and no fatals.
+#
+# Also add the same two checks to release.yml, between downloading the free version and
+# pushing it to the free repo or wordpress.org, so a release cannot skip them:
+#
+#     - name: Check the free build (no premium code, no fatals)
+#       run: |
+#         scripts/freemius/check-free-build.sh "<free zip from the deploy step>" __PLUGIN_DIR__.zip
+#         scripts/freemius/smoke-free-build.sh "<free zip from the deploy step>"
+name: Freemius free build check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  free-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read the version
+        id: v
+        run: |
+          V=$(grep -m1 -oP 'Version:\s*\K\S+' __PLUGIN_DIR__/__MAIN_FILE__)
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          case "$V" in *-*) ;; *) echo "::error::$V is not an alpha. Set X.Y.Z-alpha.N first; releases go through release.yml."; exit 1 ;; esac
+
+      # BUILD: replace with this plugin's premium build, ending with __PLUGIN_DIR__.zip at the
+      # repository root that contains the __PLUGIN_DIR__/ folder, as release.yml builds it.
+      - name: Build the premium zip
+        run: |
+          echo "::error::Replace this step with the plugin's premium build from release.yml"; exit 1
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Upload the alpha to Freemius (pending) and fetch its free build
+        id: fs
+        run: |
+          cd scripts/freemius && npm install --no-audit --no-fund && cd -
+          node scripts/freemius/freemius-free-build.js
+        env:
+          FREEMIUS_DEV_ID: 1281
+          FREEMIUS_PUBLIC_KEY: ${{ secrets.FREEMIUS_PUBLIC_KEY }}
+          FREEMIUS_SECRET_KEY: ${{ secrets.FREEMIUS_SECRET_KEY }}
+          FREEMIUS_PLUGIN_ID: __FREEMIUS_ID__
+          PLUGIN_ZIP_PATH: __PLUGIN_DIR__.zip
+          PLUGIN_VERSION: ${{ steps.v.outputs.version }}
+          FREE_ZIP_PATH: __PLUGIN_DIR__-free-${{ steps.v.outputs.version }}.zip
+
+      # Twice: php -l on the lowest supported PHP catches syntax it lacks, on 8.4 what it removed.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '__PHP_MIN__'
+      - name: Static check on PHP __PHP_MIN__ (no premium code, no calls to stripped code)
+        run: scripts/freemius/check-free-build.sh "${{ steps.fs.outputs.free_zip }}" __PLUGIN_DIR__.zip
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - name: Static check on PHP 8.4
+        run: scripts/freemius/check-free-build.sh "${{ steps.fs.outputs.free_zip }}" __PLUGIN_DIR__.zip
+
+      - name: Runtime check (free build alone on a clean WordPress)
+        run: scripts/freemius/smoke-free-build.sh "${{ steps.fs.outputs.free_zip }}"
+
+      - name: Keep the free build for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: free-build-${{ steps.v.outputs.version }}
+          path: __PLUGIN_DIR__-free-*.zip
+          retention-days: 14

@@ -384,6 +384,16 @@ def sync_release(t, v, release_only=False):
                     "boilerplate's gates (composer run check, composer run build, npm test); check them against "
                     "this plugin's own composer scripts before relying on its marker.")
         write(dest, render(read(os.path.join(TOOLING, "scripts", "release", f)), v), 0o755)
+    # A Freemius plugin with a free version: Freemius strips the premium code to make the
+    # wordpress.org build, and a missed guard either ships paid code or fatals. These check the
+    # free zip Freemius actually generates (scripts/freemius/freemius-free-check.yml.example).
+    if v["PIPELINE"] == "freemius-two-tag" or v["RELEASE_TYPE"] == "freemium":
+        if not v["FREEMIUS_ID"]:
+            sys.exit("A Freemius plugin with a free version needs freemius_id in .tooling.json for the free build check.")
+        src = os.path.join(TOOLING, "scripts", "freemius")
+        for f in sorted(os.listdir(src)):
+            write(P("scripts", "freemius", f), render(read(os.path.join(src, f)), v), 0o755 if f.endswith(".sh") else None)
+        log("freemius: scripts/freemius/ free build check (wire up .github/workflows/freemius-free-check.yml from the .example)")
     tpl = DEPLOY_TEMPLATES[v["PIPELINE"]]
     cmd = lambda f: read(os.path.join(TOOLING, "claude", "commands", f))
     text = re.sub(r"^<!-- include (\w+) -->\n", lambda m: cmd("_%s.md" % m.group(1)), cmd(tpl), flags=re.M)
