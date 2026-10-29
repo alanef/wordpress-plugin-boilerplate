@@ -15,11 +15,15 @@
 #   shortcode [a_shortcode]   rendered on a published page that is then loaded
 # Fails on an HTTP 500, WordPress's critical error page, or a PHP fatal, parse error or uncaught
 # exception in debug.log. Warnings and notices from the plugin are listed but do not fail.
+# Then loads the same pages and the block editor in a headless browser (smoke-browser.js):
+# fails on an uncaught error from the plugin's scripts, a plugin asset that does not load, or
+# a block whose block.json ships but is not registered in the editor.
 # Needs Docker and Node (as CI and local wp-env already do). Port: SMOKE_PORT, default 8895.
 set -uo pipefail
 
 ZIP="$(cd "$(dirname "${1:?Usage: $0 <free.zip>}")" && pwd)/$(basename "$1")"
-ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(git -C "$HERE" rev-parse --show-toplevel)"
 DIR="__PLUGIN_DIR__"
 PORT="${SMOKE_PORT:-8895}"
 URL="http://localhost:$PORT"
@@ -77,6 +81,7 @@ visit() {
 		bad "$path: HTTP $code or fatal on the page"
 	else
 		echo "ok   $path ($code)"
+		echo "$path" >> "$W/paths"
 	fi
 }
 
@@ -115,11 +120,22 @@ if [ -f "$ROOT/.freemius-free-smoke" ]; then
 	done < "$ROOT/.freemius-free-smoke"
 fi
 
+# Browser pass, before debug.log is read, so PHP errors from the scripts' own requests count.
+# Blocks: every block.json in the build, by name (src/ and build/ copies name the same block).
+blocks=$(find "$W/$DIR" -name block.json -not -path '*/node_modules/*' -exec php -r 'echo json_decode(file_get_contents($argv[1]))->name ?? "", "\n";' {} \; | sort -u)
+if [ ! -d "$HERE/node_modules/playwright" ]; then
+	(cd "$HERE" && npm install --no-audit --no-fund >/dev/null 2>&1) || bad "could not install the browser check (npm install in $HERE)"
+fi
+if [ -n "${CI:-}" ]; then (cd "$HERE" && npx playwright install --with-deps chromium >/dev/null 2>&1); else (cd "$HERE" && npx playwright install chromium >/dev/null 2>&1); fi
+touch "$W/paths"
+# shellcheck disable=SC2086
+node "$HERE/smoke-browser.js" "$URL" "$DIR" "$W/paths" $blocks || fail=1
+
 log=$(cli cat wp-content/debug.log 2>/dev/null)
 fatal=$(echo "$log" | grep -E 'PHP (Fatal|Parse) error|Uncaught ' | head -10)
 [ -n "$fatal" ] && bad "debug.log:"$'\n'"$fatal"
 notes=$(echo "$log" | grep -E 'PHP (Warning|Notice|Deprecated)' | grep -F "/plugins/$DIR/" | sort -u | head -10)
 [ -n "$notes" ] && echo "WARN plugin warnings/notices in debug.log:"$'\n'"$notes"
 
-if [ "$fail" = 0 ]; then echo "PASS free build runs without fatals"; else echo "BLOCKED: the free build fatals. See above." >&2; fi
+if [ "$fail" = 0 ]; then echo "PASS free build runs without fatals or script errors"; else echo "BLOCKED: the free build fatals or its scripts fail. See above." >&2; fi
 exit "$fail"

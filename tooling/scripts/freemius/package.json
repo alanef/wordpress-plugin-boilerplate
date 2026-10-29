@@ -1,8 +1,9 @@
 {
   "name": "freemius-free-build-check",
   "private": true,
-  "description": "Managed by wordpress-plugin-boilerplate/tooling. Uploads an alpha to Freemius and fetches its free build.",
+  "description": "Managed by wordpress-plugin-boilerplate/tooling. Uploads an alpha to Freemius, fetches its free build and checks it in a browser.",
   "dependencies": {
-    "freemius-node-sdk": "github:alanef/freemius-node-sdk"
+    "freemius-node-sdk": "github:alanef/freemius-node-sdk",
+    "playwright": "1.49.1"
   }
 }
