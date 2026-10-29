@@ -134,7 +134,7 @@ So the free zip Freemius generates is checked, never our own source. The sync re
 
 | File | What it does |
 |---|---|
-| `freemius-free-build.js` | uploads an **alpha** (`X.Y.Z-alpha.N` only) to Freemius and downloads the free zip it generates. Freemius keeps the upload **pending**, offered to nobody unless released in the dashboard, so developers may run it freely (Alan, 2026-10-29) |
+| `freemius-free-build.js` | uploads a **prerelease** (`X.Y.Z-alpha.N` or `-beta.N`, never a release version) to Freemius and downloads the free zip it generates. Freemius keeps the upload **pending**, offered to nobody unless released in the dashboard, so developers may run it freely (Alan, 2026-10-29) |
 | `check-free-build.sh <free.zip> [<premium.zip>]` | `php -l` on every file; every `@fs_premium_only` path absent; no premium-named files; `free-build-scan.php`; the project's `.freemius-free-denylist` (regexes that must never ship) |
 | `free-build-scan.php` | token scan, ignoring comments: premium-named definitions that survived (`leak-def`), guards left in an `if` (`guard-left`), calls to stripped `__premium_only` code (`dangling-call`), functions or classes defined only in premium code (`only-premium`). Names checked with `function_exists()` / `class_exists()` / `method_exists()` count as guarded. Accepted findings go in `.freemius-free-scan-ignore` as `<kind> <name> <reason>`; a line with no reason is refused and `leak-def` can never be ignored |
 | `smoke-free-build.sh <free.zip>` | installs the free zip alone on a clean wp-env WordPress (`WP_DEBUG` on), activates it, loads the front page, wp-admin, Plugins and every `?page=` menu screen, plus the `url` and `shortcode` lines of the project's `.freemius-free-smoke`; fails on HTTP 500, the critical error page, or a fatal in debug.log. Takes the environment down afterwards |
@@ -142,7 +142,7 @@ So the free zip Freemius generates is checked, never our own source. The sync re
 
 Two places run it:
 
-1. **During development**, on an alpha: run `freemius-free-check.yml` (Actions tab or
+1. **During development**, on a prerelease version (keep the suffix above any already uploaded: after `6.9.0-beta.2`, use `-beta.3`, since `-alpha` sorts lower): run `freemius-free-check.yml` (Actions tab or
    `gh workflow run freemius-free-check.yml --ref develop`) before asking for a release. A
    rejected upload ("already exists") means bump the alpha number.
 2. **In release.yml**, as a blocking step between downloading the free version and pushing it to
