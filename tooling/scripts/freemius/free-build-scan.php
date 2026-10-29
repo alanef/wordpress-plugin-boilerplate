@@ -81,6 +81,12 @@ function scan( $dir ) {
 		$n      = count( $code );
 		for ( $i = 0; $i < $n; $i++ ) {
 			$t = $code[ $i ];
+			// PHP 8 tokenises Ns\Name and \Ns\Name as one name token; compare on the last segment,
+			// which is what a definition (always a bare T_STRING) is keyed on.
+			$qualified = array_filter( array( defined( 'T_NAME_QUALIFIED' ) ? T_NAME_QUALIFIED : null, defined( 'T_NAME_FULLY_QUALIFIED' ) ? T_NAME_FULLY_QUALIFIED : null ) );
+			if ( is_array( $t ) && in_array( $t[0], $qualified, true ) ) {
+				$t = array( T_STRING, substr( strrchr( '\\' . $t[1], '\\' ), 1 ), $t[2] );
+			}
 			if ( ! is_array( $t ) || T_STRING !== $t[0] ) {
 				continue;
 			}
