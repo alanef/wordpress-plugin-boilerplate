@@ -19,6 +19,9 @@
 #       run: |
 #         scripts/freemius/check-free-build.sh "<free zip from the deploy step>" __PLUGIN_DIR__.zip
 #         scripts/freemius/smoke-free-build.sh "<free zip from the deploy step>"
+#
+# with check-free-build.sh run on both PHP __PHP_MIN__ and 8.4 (a setup-php step before each), as
+# below: the lowest version catches syntax it lacks, 8.4 what it removed.
 name: Freemius free build check
 
 on:
@@ -40,7 +43,7 @@ jobs:
         run: |
           V=$(grep -m1 -oP 'Version:\s*\K\S+' __PLUGIN_DIR__/__MAIN_FILE__)
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          case "$V" in *-*) ;; *) echo "::error::$V is not an alpha. Set X.Y.Z-alpha.N first; releases go through release.yml."; exit 1 ;; esac
+          case "$V" in *-*) ;; *) echo "::error::$V is not a prerelease. Set X.Y.Z-alpha.N or -beta.N first; releases go through release.yml."; exit 1 ;; esac
 
       # BUILD: replace with this plugin's premium build, ending with __PLUGIN_DIR__.zip at the
       # repository root that contains the __PLUGIN_DIR__/ folder, as release.yml builds it.
@@ -52,11 +55,16 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Upload the alpha to Freemius (pending) and fetch its free build
-        id: fs
+      # Its own step, with no secrets and no install scripts: a compromised dependency's install
+      # script must never run where FREEMIUS_SECRET_KEY is in the environment.
+      - name: Install the check's dependencies (no secrets)
+        working-directory: scripts/freemius
         run: |
-          cd scripts/freemius && npm install --no-audit --no-fund && cd -
-          node scripts/freemius/freemius-free-build.js
+          if [ -f package-lock.json ]; then npm ci --ignore-scripts --no-audit --no-fund; else npm install --ignore-scripts --no-audit --no-fund; fi
+
+      - name: Upload the prerelease to Freemius (pending) and fetch its free build
+        id: fs
+        run: node scripts/freemius/freemius-free-build.js
         env:
           FREEMIUS_DEV_ID: 1281
           FREEMIUS_PUBLIC_KEY: ${{ secrets.FREEMIUS_PUBLIC_KEY }}

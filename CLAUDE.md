@@ -151,7 +151,12 @@ Two places run it:
    prerelease version on develop (Plugin Check fails `stable_tag_mismatch` otherwise, and CI
    requires header = Stable tag); `bump-version.sh` sets both to the release version.
 2. **In release.yml**, as a blocking step between downloading the free version and pushing it to
-   the free repo or wordpress.org, so a release cannot skip it. The example's header has the step.
+   the free repo or wordpress.org, so a release cannot skip it. The example's header has the step;
+   run `check-free-build.sh` on both the lowest supported PHP and 8.4, as the check workflow does.
+
+Install `scripts/freemius/`'s dependencies in their own step with no secrets and
+`--ignore-scripts`, never in the step that has `FREEMIUS_SECRET_KEY`: a compromised
+dependency's install script could otherwise read the developer key and release to customers.
 
 Run locally against any free zip, for example the live one:
 `curl -sLO https://downloads.wordpress.org/plugin/<slug>.latest-stable.zip && scripts/freemius/check-free-build.sh <slug>.latest-stable.zip`.

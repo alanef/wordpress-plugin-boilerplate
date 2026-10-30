@@ -130,7 +130,7 @@ blocks=$( {
 	[ -f "$ROOT/.freemius-free-smoke" ] && sed -n 's/^block[[:space:]]\{1,\}\([^[:space:]]*\).*/\1/p' "$ROOT/.freemius-free-smoke"
 } | sort -u)
 if [ ! -d "$HERE/node_modules/playwright" ]; then
-	(cd "$HERE" && npm install --no-audit --no-fund >/dev/null 2>&1) || bad "could not install the browser check (npm install in $HERE)"
+	(cd "$HERE" && npm install --ignore-scripts --no-audit --no-fund >/dev/null 2>&1) || bad "could not install the browser check (npm install in $HERE)"
 fi
 if [ -n "${CI:-}" ]; then (cd "$HERE" && npx playwright install --with-deps chromium >/dev/null 2>&1); else (cd "$HERE" && npx playwright install chromium >/dev/null 2>&1); fi
 touch "$W/paths"

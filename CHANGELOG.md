@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `check-dependencies.sh` no longer blocks a release when the plugin's `composer.json` only autoloads. The fresh resolve gives a lock with no packages, and `composer audit` exits 1 on that ("No installed packages found"), which the script read as advisories in shipped code. It now reports "none shipped" (Fullworks Gravity Image Resize).
 - The synced `.gitignore` now ignores `.wp-env/`. Docker creates it as a root-owned folder (an `mu-plugins` stub) when wp-env maps one, so it showed as an untracked change in plugin repos (Anti-Spam), and a root-owned folder can't be removed without sudo. The boilerplate's own `.gitignore` already had it, but the synced copy didn't.
 
+### Security
+
+- The Freemius free build check installs its npm dependencies in a step of its own, with no secrets and `--ignore-scripts` (`npm ci` when a lock file is present). It used to run `npm install` with install scripts enabled in the step holding `FREEMIUS_SECRET_KEY`, so a compromised dependency could have read the developer key and released to paying customers. Found in Display Eventbrite Events' post-release security review. The smoke script's own install also skips install scripts.
+
 ## [1.1.0] - 2026-10-09
 
 ### Added
