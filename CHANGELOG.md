@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Freemius free build check: a rejected upload now fails the upload step. The Freemius SDK never calls back on a non-2xx response, so a 400 "Product version ... already exists" exited 0 with no free zip, and the next step died with a misleading usage error from `check-free-build.sh` (DEE run 41614601044). The step now fails, pointing at the SDK's error lines and saying to bump the alpha number.
 - `check-dependencies.sh` no longer blocks a release when the plugin's `composer.json` only autoloads. The fresh resolve gives a lock with no packages, and `composer audit` exits 1 on that ("No installed packages found"), which the script read as advisories in shipped code. It now reports "none shipped" (Fullworks Gravity Image Resize).
 - The synced `.gitignore` now ignores `.wp-env/`. Docker creates it as a root-owned folder (an `mu-plugins` stub) when wp-env maps one, so it showed as an untracked change in plugin repos (Anti-Spam), and a root-owned folder can't be removed without sudo. The boilerplate's own `.gitignore` already had it, but the synced copy didn't.
 

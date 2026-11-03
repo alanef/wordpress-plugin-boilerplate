@@ -45,6 +45,18 @@ if (!fs.existsSync(zipPath)) {
 const developer = new Freemius('developer', devId, publicKey, secretKey, false);
 const out = (k, v) => process.env.GITHUB_OUTPUT && fs.appendFileSync(process.env.GITHUB_OUTPUT, `${k}=${v}\n`);
 
+// The SDK never calls back on a non-2xx response: it logs "Error:Stats Code:..." and returns,
+// so the process would exit 0 with no free zip (seen on DEE run 41614601044, a 400
+// "Product version ... already exists"). Fail unless the download finished.
+let finished = false;
+process.on('exit', (code) => {
+    if (!finished && code === 0) {
+        console.error('ERROR: the Freemius upload or download did not succeed (see the "Error:" lines above).');
+        console.error(`If Freemius says ${version} already exists, bump the alpha number (bump only N) and run the check again.`);
+        process.exitCode = 1;
+    }
+});
+
 console.log(`Uploading ${path.basename(zipPath)} (${version}) to Freemius plugin ${pluginId} as a pending version`);
 developer.Api(`plugins/${pluginId}/tags.json`, 'POST', { add_contributor: false }, { file: zipPath }, (response) => {
     let tag;
@@ -81,6 +93,7 @@ developer.Api(`plugins/${pluginId}/tags.json`, 'POST', { add_contributor: false 
         console.log(`Free build written to ${freeZip} (${size} bytes)`);
         out('free_zip', freeZip);
         out('tag_id', tag.id);
+        finished = true;
         console.log(`::notice::${version} is pending in Freemius (tag ${tag.id}); it is not offered to anyone unless released.`);
     });
 });
