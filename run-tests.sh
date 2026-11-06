@@ -35,7 +35,7 @@ UNIT_STATUS=0
 if [ -f tests/phpunit-unit.xml.dist ]; then
     echo "Running unit tests (no WordPress)..."
     echo ""
-    ( cd tests && php ../vendor/bin/phpunit --configuration phpunit-unit.xml.dist --colors=always --testdox $* )
+    ( cd tests && php ../vendor/bin/phpunit --configuration phpunit-unit.xml.dist --colors=always --testdox "$@" )
     UNIT_STATUS=$?
     echo ""
 fi
@@ -49,11 +49,18 @@ echo ""
 echo "Running tests..."
 echo ""
 
+# The script below is parsed a second time by bash inside the container, so each
+# argument is shell-quoted for it. Otherwise --filter 'a|b' runs as a pipe.
+QUOTED_ARGS=""
+if [ $# -gt 0 ]; then
+    QUOTED_ARGS=$(printf ' %q' "$@")
+fi
+
 $WP_ENV run tests-cli bash -c "
     export WP_TESTS_DIR=/wordpress-phpunit && \
     export WP_TESTS_PHPUNIT_POLYFILLS_PATH=/var/www/html/vendor/yoast/phpunit-polyfills && \
     cd /var/www/html && \
-    php ./vendor/bin/phpunit --configuration phpunit.xml.dist --colors=always --testdox $*
+    php ./vendor/bin/phpunit --configuration phpunit.xml.dist --colors=always --testdox${QUOTED_ARGS}
 "
 STATUS=$?
 
