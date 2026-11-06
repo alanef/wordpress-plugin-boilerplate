@@ -43,16 +43,31 @@ const bad = (m) => { console.log(`FAIL ${m}`); fail = 1; pageFailed = true; };
     page.on('response', (r) => { if (mine(r.url()) && r.status() >= 400) bad(`${where}: ${r.url()} returned ${r.status()}`); });
     page.on('requestfailed', (r) => { if (mine(r.url())) bad(`${where}: ${r.url()} failed: ${r.failure()?.errorText}`); });
 
-    await page.goto(`${base}/wp-login.php`);
-    await page.fill('#user_login', 'admin');
-    await page.fill('#user_pass', 'password');
-    await Promise.all([page.waitForNavigation(), page.click('#wp-submit')]);
+    // A slow CI runner is not a defect in the build: DEE 6.9.2-alpha.4, .9 and .10 timed out here or
+    // on networkidle with no plugin error, and each blocked a good build. So logging in gets a retry,
+    // and networkidle (which the editor's background requests can hold off) is only a best-effort
+    // wait for late assets. A page that never reaches "load" still fails.
+    const login = async () => {
+        await page.goto(`${base}/wp-login.php`, { timeout: 90000 });
+        await page.fill('#user_login', 'admin');
+        await page.fill('#user_pass', 'password');
+        await Promise.all([page.waitForNavigation({ timeout: 90000 }), page.click('#wp-submit')]);
+    };
+    try {
+        await login();
+    } catch (e) {
+        console.log(`WARN login did not finish, trying once more: ${e.message.split('\n')[0]}`);
+        await login();
+    }
 
     const load = async (path) => {
         where = path;
         pageFailed = false;
         try {
-            await page.goto(base + path, { waitUntil: 'networkidle', timeout: 45000 });
+            await page.goto(base + path, { waitUntil: 'load', timeout: 90000 });
+            await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {
+                console.log(`WARN ${path}: network still busy 20s after load, carrying on`);
+            });
             if (!pageFailed) console.log(`ok   browser ${path}`);
         } catch (e) {
             bad(`${path}: did not load in the browser: ${e.message.split('\n')[0]}`);
@@ -63,7 +78,7 @@ const bad = (m) => { console.log(`FAIL ${m}`); fail = 1; pageFailed = true; };
 
     await load(editor);
     try {
-        await page.waitForFunction(() => window.wp && wp.blocks && wp.blocks.getBlockTypes().length > 0, null, { timeout: 45000 });
+        await page.waitForFunction(() => window.wp && wp.blocks && wp.blocks.getBlockTypes().length > 0, null, { timeout: 90000 });
         const missing = await page.evaluate((names) => names.filter((n) => !wp.blocks.getBlockType(n)), blocks);
         for (const n of blocks) {
             missing.includes(n) ? bad(`block ${n} is not registered in the editor, so it is missing from the inserter`) : console.log(`ok   block ${n} registered`);
