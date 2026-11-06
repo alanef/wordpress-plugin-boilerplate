@@ -18,14 +18,18 @@ for c in $(git -C $P log --format=%H --grep="^$ID\b" -E $PREV..$TAG); do
 done | grep -q '^__PLUGIN_DIR__/' && echo shipped || echo non-shipping
 ```
 
+Read the project's fields first with `get_issue_fields_schema`, because projects differ:
+PLUGINS_SMALL has no `Deployed` Stage, no Resolution and no Fix versions. Never create a field,
+value or version; report anything skipped.
+
 For each issue:
 
-- Stage: `Deployed`, **only if it shipped plugin code**. An issue whose commits in range touch
-  only paths outside `__PLUGIN_DIR__/` (tests, tooling, marketing, docs) keeps its Stage as it is.
-- Resolution: `Done`, if the issue is not already resolved.
-- Fix versions: `$V`, only if that version already exists in the project's Fix versions
-  bundle (check the field schema with `get_issue_fields_schema`). If it does not, say so in
-  the report and leave the field alone; never create the version.
+- Stage: `Deployed`, or the project's final value (`Done`) if it has no `Deployed`, **only if it
+  shipped plugin code**. An issue whose commits in range touch only paths outside
+  `__PLUGIN_DIR__/` (tests, tooling, marketing, docs) keeps its Stage as it is.
+- Resolution: `Done`, if the project has the field and the issue is not already resolved.
+- Fix versions: `$V`, only if the project has the field and that version already exists in its
+  bundle. If not, say so in the report and leave the field alone.
 - Comment, on every issue in range including non-shipping ones: `Released in $V`, with the
   GitHub release link (`https://github.com/__REPO__/releases/tag/$TAG`) and, for anything
   user-visible, one line on what changed.
