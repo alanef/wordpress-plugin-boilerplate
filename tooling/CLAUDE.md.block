@@ -44,6 +44,14 @@ under `= Unreleased =` at the top, in the same commit:
 * Added: / Changed: / Deprecated: / Removed: / Security:
 ```
 
+**Never describe a vulnerability publicly** (Alan, 8 Nov 2026). The changelog, the KB page,
+GitHub releases and anything else public must not say what a fixed vulnerability was or how
+it worked, because sites that have not updated are still exposed. A security fix is only
+`* Security: improved security`. A behaviour change the fix brings can have its own bullet,
+worded without the security reason. The detail belongs in YouTrack and private evidence. In a
+public repo, keep commit messages for security fixes neutral too. `/tk-deploy live` checks
+the version's section before tagging.
+
 While developing, carry a prerelease suffix (`1.4.0-alpha.1`, bump only the `N`); release.yml
 refuses to publish one. Releasing drops it.
 

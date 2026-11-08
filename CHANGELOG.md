@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- `/tk-deploy live` refuses to tag a release whose changelog section describes a vulnerability (Alan's rule, 8 Nov 2026). Public changelogs stay up after release while many sites update late, so a fix is only `* Security: improved security`, and any behaviour change it brings is worded without the security reason. A mechanical check fails on any other `Security:` bullet, then every bullet is read for attack detail. The rule is in the plugin CLAUDE.md block too. Display Eventbrite Events' 6.9.2 changelog had seven detailed lines before it was rewritten.
 - The Freemius free build check installs its npm dependencies in a step of its own, with no secrets and `--ignore-scripts` (`npm ci` when a lock file is present). It used to run `npm install` with install scripts enabled in the step holding `FREEMIUS_SECRET_KEY`, so a compromised dependency could have read the developer key and released to paying customers. Found in Display Eventbrite Events' post-release security review. The smoke script's own install also skips install scripts.
 
 ## [1.1.0] - 2026-10-09

@@ -281,6 +281,12 @@ is what `update-changelog.sh` publishes to the KB. No root `CHANGELOG.md` in plu
 `readme.txt`'s `== Changelog ==` may link to the KB page or repeat recent entries. This
 repository's own `CHANGELOG.md` is the boilerplate project's history, not `plugin-name`'s.
 
+No public text may describe a vulnerability (Alan, 8 Nov 2026): a security fix is only
+`* Security: improved security`, and a behaviour change it brings is worded without the
+security reason. That covers the changelog, KB page and GitHub releases, and commit messages
+in public repos. The detail lives in YouTrack and private evidence. The deploy preconditions
+check the version's section before tagging.
+
 ## Release
 
 A plugin: `/tk-release X.Y.Z`, commit, `/tk-deploy live` (see Release pipelines). This
