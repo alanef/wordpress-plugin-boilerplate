@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Plugin Check and release builds no longer fail when the runner can't reach github.com within WP-CLI's 10 s limit while installing dist-archive (cURL error 28). The step retries four times with a growing delay. Seen twice in a row on Locally Trades on 8 Nov.
 - `run-tests.sh` passed its arguments unquoted, so the `|` in `--filter 'a|b'` ran as a shell pipe inside the container: exit 127 and no PHPUnit run, which reads as a failing test. Arguments now reach PHPUnit intact in both the unit and wp-env runs.
 - The deploy commands' YouTrack step no longer assumes every project has a `Deployed` Stage, Resolution and Fix versions. PLUGINS_SMALL has none of them, so the step told the session to set values that don't exist (Locally 1.24.0). It now reads the project's fields first, uses `Done` when there is no `Deployed`, and reports what it skipped.
 - The free build browser check no longer fails a good build because a CI runner was slow. Display Eventbrite Events 6.9.2-alpha.4, .9 and .10 timed out on `networkidle` or at login with no plugin error reported, and each one cost another alpha and another Freemius upload. `smoke-browser.js` now waits for `load` (90 seconds), then gives late assets up to 20 seconds of best-effort `networkidle`, which only warns if the network stays busy, and retries login once. A page that never loads, a plugin asset that fails and a missing block all still fail.

@@ -99,7 +99,14 @@ jobs:
           rm -f "$HOME/.composer/auth.json" \
                 "$HOME/.config/composer/auth.json" \
                 "$HOME/.wp-cli/packages/auth.json" 2>/dev/null || true
-          wp package install wp-cli/dist-archive-command:v3.1.0
+          # wp-cli fetches the package from github.com with a fixed 10 s timeout, which
+          # shared runners sometimes miss (cURL error 28). Retry with a growing delay.
+          for i in 1 2 3 4; do
+            wp package install wp-cli/dist-archive-command:v3.1.0 && exit 0
+            echo "::warning::dist-archive install failed (attempt $i), retrying"
+            sleep $((i * 15))
+          done
+          exit 1
 
       - name: Build plugin for release
         run: composer run-script build
