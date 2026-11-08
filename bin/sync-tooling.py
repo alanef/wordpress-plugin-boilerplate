@@ -440,6 +440,12 @@ def main():
             % ("--release-only" if args.release_only else "pipeline " + v["PIPELINE"]))
         sync_changelog(t, v)
         sync_release(t, v, release_only=True)
+        # checks.yml carries no pipeline logic. A copy that still has the managed mark came
+        # from an earlier full sync, so keep it current; an unmarked one is the plugin's own.
+        ck = P(".github", "workflows", "checks.yml")
+        if os.path.exists(ck) and MANAGED_MARK in read(ck):
+            write(ck, R("workflows/checks.yml"))
+            log("release-only: synced managed .github/workflows/checks.yml")
         log("release-only: skipped " + ", ".join(RELEASE_ONLY_SKIPPED))
         print("Done (release-only).")
         return

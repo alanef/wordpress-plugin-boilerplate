@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `sync-tooling.sh` now keeps `checks.yml` current on release-only pipelines (own-site, Freemius two-tag) when the plugin's copy still carries the managed mark. Before, such plugins never got CI fixes: Locally Trades was missing the WP-CLI safeguard and the dist-archive retry, and failed CI three times on 8 Nov. An unmarked `checks.yml`, such as QPP's own, is still left alone, as is `release.yml`.
 - Plugin Check and release builds no longer fail when the runner can't reach github.com within WP-CLI's 10 s limit while installing dist-archive (cURL error 28). The step retries four times with a growing delay. Seen twice in a row on Locally Trades on 8 Nov.
 - `run-tests.sh` passed its arguments unquoted, so the `|` in `--filter 'a|b'` ran as a shell pipe inside the container: exit 127 and no PHPUnit run, which reads as a failing test. Arguments now reach PHPUnit intact in both the unit and wp-env runs.
 - The deploy commands' YouTrack step no longer assumes every project has a `Deployed` Stage, Resolution and Fix versions. PLUGINS_SMALL has none of them, so the step told the session to set values that don't exist (Locally 1.24.0). It now reads the project's fields first, uses `Done` when there is no `Deployed`, and reports what it skipped.
