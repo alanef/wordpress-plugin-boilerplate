@@ -403,6 +403,11 @@ def sync_release(t, v, release_only=False):
         sys.exit("unrendered placeholders in %s: %s" % (tpl, left))
     write(P(".claude", "commands", "deploy-live.md"), text)
     log("release: scripts/release/ hooks, .claude/commands/deploy-live.md from %s (tags %sX.Y.Z)" % (tpl, v["TAG_PREFIX"]))
+    # second-reader: read-only adversarial review subagent; its Bash is limited by the guard hook.
+    write(P(".claude", "agents", "second-reader.md"), read(os.path.join(TOOLING, "claude", "agents", "second-reader.md")))
+    write(P(".claude", "hooks", "second-reader-guard.py"),
+          read(os.path.join(TOOLING, "claude", "hooks", "second-reader-guard.py")), 0o755)
+    log("review: .claude/agents/second-reader.md + .claude/hooks/second-reader-guard.py")
 
 
 def replace_block(existing, block, prepend):

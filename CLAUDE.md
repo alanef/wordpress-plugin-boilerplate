@@ -25,6 +25,8 @@ plugin**. Each plugin repository's `CLAUDE.md` links here. Two rules follow from
 ├── phpcs.xml / phpcs_sec.xml          # WordPress-Extra (local) / security sniffs (CI)
 ├── scripts/release/*.sh               # /tk-release hooks: bump-version, check-dependencies, run-tests-and-mark
 ├── .claude/commands/deploy-live.md    # /tk-deploy live for this plugin's release pipeline
+├── .claude/agents/second-reader.md    # read-only adversarial review before release (consent, payment, credentials, deletion)
+├── .claude/hooks/second-reader-guard.py  # limits second-reader's Bash to read-only git
 ├── .sdlc/releases/X.Y.Z/              # release evidence (notes, TESTS_PASSED, DEPENDENCY_AUDIT)
 ├── CLAUDE.md, README.md
 └── <plugin-dir>/                      # the plugin exactly as shipped (wp dist-archive + .distignore)
@@ -52,6 +54,7 @@ plugin**. Each plugin repository's `CLAUDE.md` links here. Two rules follow from
 | `<plugin>/changelog.txt` | generated / merged | created if missing (from readme.txt `== Changelog ==` version entries, else a `* Baseline.` entry); a root `CHANGELOG.md` is merged in (`## [x.y.z]` -> `= x.y.z =`, `### Fixed` + `- item` -> `* Fixed: item`, Unreleased kept, baseline placeholders dropped) and deleted. Idempotent |
 | `scripts/release/{bump-version,check-dependencies,run-tests-and-mark}.sh` | `tooling/scripts/release/` | overwritten, executable (release-only: an unmanaged `run-tests-and-mark.sh` is kept) |
 | `.claude/commands/deploy-live.md` | `tooling/claude/commands/deploy-live.<pipeline>.md` | overwritten; template chosen from the pipeline (below) |
+| `.claude/agents/second-reader.md`, `.claude/hooks/second-reader-guard.py` | `tooling/claude/agents/`, `tooling/claude/hooks/` | overwritten (release-only too). Read-only adversarial review subagent; the guard limits its Bash to read-only git |
 | `<plugin>/includes/class-github-updater.php`, `tests/test-github-updater.php`, `Update URI:` header, guarded `require` block at the end of the main file | `tooling/github-updater.php`, `tooling/tests/` | GitHub-only plugins (no `Type:` in readme.txt): overwritten, header set from the git remote. Any `Type:`: all removed |
 
 Per-repo values are detected (plugin dir, main file, default branch, `*_VERSION` constant,
